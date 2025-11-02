@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XO Projects Transcripts to AI Chat</title>
+  <link href="font_google.css" rel="stylesheet">
+  <script src="chart.js"></script>
+  <link rel="stylesheet" href="styleUI.css">
+  <link rel="stylesheet" href="table-scroll-styles.css">
+ 
+  
+</head>
+<body>
+  <div id="landingPage" class="landing-page">
+    <div class="ngnx-app-shell__navigation-bar">
+      <ul class="ngnx-navigation-menu-app__list ngnx-navigation-menu-app__list--collapsed">
+
+        <li class="ngnx-navigation-menu-app__list-item" onclick="showView('home')">
+            <span aria-label="Home" class="ngnx-navigation-menu-app__list-item-app">
+                <span class="ngnx-navigation-menu-app__list-item-app-icon ngnx-icon">
+                    <img src="assets/img/analytics-widgets.svg" alt="Home" class="nav-icon-size" />
+                </span>
+            </span>
+        </li>
+
+        <li class="ngnx-navigation-menu-app__list-item" onclick="showView('chat')">
+            <span aria-label="Chat" class="ngnx-navigation-menu-app__list-item-app">
+                <span class="ngnx-navigation-menu-app__list-item-app-icon ngnx-icon">
+                    <img src="assets/img/bot-builder.svg" alt="Chat" class="nav-icon-size" />
+                </span>
+            </span>
+        </li>
+
+        <li class="ngnx-navigation-menu-app__list-item" onclick="showView('admin')">
+            <span aria-label="Project Administration" class="ngnx-navigation-menu-app__list-item-app">
+                <span class="ngnx-navigation-menu-app__list-item-app-icon ngnx-icon">
+                    <img src="assets/img/admin.svg" alt="Admin" class="nav-icon-size" />
+                </span>
+            </span>
+        </li>
+
+      </ul>
+      </div>
+    
+    <div class="landing-content">
+      
+      <div class="ngnx-xo-project-header">
+        <h3 class="ngnx-xo-project-header__title">XO Projects Transcripts to AI Chat</h3>
+        
+        <div id="chatProjectSelectorContainer" class="chat-project-selector-container" style="display: none;">
+          <div class="ngnx-input-text-container">
+            <input type="text" id="chatProjectSearch" placeholder="Select Project" readonly aria-expanded="false" style="border:none;  width: 100%; height: 100%;"/>
+            <img id="chatDropdownArrow" src="assets/img/arrow-down.svg" alt="Dropdown Arrow" class="dropdown-arrow-icon"  style= "height: 15px; width: 15px";/>
+          </div>
+          <ul id="chatProjectDropdown" class="chat-project-dropdown-list hidden">
+            </ul>
+        </div>
+        
+        <div id="createProjectButtonContainer" class="ngnx-xo-header__title-button"> 
+          <button class="ngnx-button ngnx-button--medium ngnx-button--primary" onclick="openCreateProject()">
+            <span class="ngnx-button__content">
+              <span class="ngnx-button__label ngnx-button__content-item">Create Project</span>
+            </span>
+          </button>
+        </div>
+      </div>                
+      <div class="landing-main">
+        <div id="resultsPanel" class="ngnx-xo-results__panel ngnx-main-panel">
+          <div class="ngnx-main-panel__header">
+            <div class="ngnx-main-panel__header-title">Projects Overview</div>
+          </div>
+          <div class="ngnx-main-panel__body">
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+  
+  <section id="createProjectPanel" class="ngnx-xo-create-project-container hidden" aria-hidden="true">
+    <nx-side-panel class="ngnx-side-panel ngnx-side-panel--position-right ngnx-side-panel--overlay" role="dialog" aria-modal="true" aria-label="Create Project">
+      <nx-side-panel-header class="ngnx-side-panel-header ngnx-side-panel-header--position-right ngnx-side-panel-header--size-large">
+        <span class="ngnx-side-panel-header__icon ngnx-icon">
+          <div></div>
+        </span>
+        <span class="ngnx-side-panel-header__text">Create Project</span>
+
+        <button
+          nxghostbutton
+          class="ngnx-side-panel-header__close-button ngnx-ghost-button ngnx-ghost-button--medium ngnx-ghost-button--icon-only"
+          aria-label="Close"
+          onclick="closeCreateProject()"
+          style="--ngnx-ghost-button-foreground-color: var(--ngnx-color-application-glue-630); --ngnx-ghost-button-selected-background-color: var(--ngnx-color-application-glue-5);">
+          <span class="ngnx-ghost-button__icon ngnx-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+              <path d="M24 14.080l-13.6-13.6c-0.64-0.64-1.76-0.64-2.4 0s-0.64 1.76 0 2.4l12.8 12.8-12.8 13.6c-0.64 0.64-0.64 1.76 0 2.4s1.76 0.64 2.4 0l13.6-14.4c0.48-0.48 0.48-0.96 0.48-1.44 0-0.8-0.16-1.44-0.48-1.76z"/>
+            </svg>
+          </span>
+        </button>
+      </nx-side-panel-header>
+
+      <nx-side-panel-body class="ngnx-side-panel-body ngnx-side-panel-body--header-present">
+        <div class="ngnx-xo-create-project-container__side-panel-body-wrapper ngnx-xo-create-project-container__sidebar">
+          <div class="ngnx-xo-create-project-container__sidebar-padding">
+            
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-required">
+              <label class="ngnx-form-field__label" aria-hidden="true">Project Name</label>
+              <div class="ngnx-input-text-container ngnx-input-text-container--form-type ngnx-input-text-container--no-icons">
+                <input name="projectName"
+                       class="ngnx-input-text ngnx-xo-create-project-container__sidebar-project-name-input ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Enter project name"
+                       maxlength="80" />
+              </div>
+              <div class="ngnx-form-field__message ngnx-form-field__message--hidden"></div>
+            </nx-form-field>
+      
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label" aria-hidden="true">Description</label>
+              <textarea name="projectDescription"
+                        class="ngnx-input-text ngnx-xo-create-project-container__sidebar-project-description-textarea ngnx-xo-input-text"
+                        placeholder="Enter project description"
+                        maxlength="260"></textarea>
+              <div class="ngnx-form-field__message ngnx-form-field__message--hidden"></div>
+            </nx-form-field>
+            
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field ngnx-xo-create-project-container__sidebar-required">
+              <label class="ngnx-form-field__label" aria-hidden="true">Upload CSV Data File</label>
+              <nx-auto-complete class="ngnx-xo-create-project-container__sidebar-auto-complete" style="pointer-events:unset; opacity:1; cursor:auto;">
+            
+                <section>
+                  <div class="ngnx-xo-create-project-container__sidebar-file-upload-container" style="pointer-events:unset; opacity:1;">
+                    <input type="file" id="fileDropRef" accept=".csv" />
+                    <img src="assets/img/ic-upload-file.svg" alt="" height="26" width="26" />
+                    <h4 class="drag-file-label">Drag files here or <span>Browse</span></h4>
+                    <label class="supported-file-label">Supported file type: CSV</label>
+                  </div>
+      
+                  <div class="ngnx-xo-create-project-container__sidebar-files-list" style="margin-top:unset;"></div>
+                </section>
+              </nx-auto-complete>
+              <div class="ngnx-form-field__message ngnx-form-field__message--hidden"></div>
+            </nx-form-field>
+            
+          </div>
+      
+          <div class="ngnx-xo-create-project-container__sidebar-button-bar">
+            <button class="ngnx-footer-button ngnx-button ngnx-button--medium ngnx-button--secondary" onclick="closeCreateProject()">
+              <span class="ngnx-button__content">
+                <span class="ngnx-button__label ngnx-button__content-item">Cancel</span>
+              </span>
+            </button>
+            <button class="ngnx-footer-button ngnx-button ngnx-button--medium ngnx-button--primary">
+              <span class="ngnx-button__content">
+                <span class="ngnx-button__label ngnx-button__content-item">Save</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </nx-side-panel-body>
+      
+    </nx-side-panel>
+  </section>
+
+  <script src="MainScript.js" defer></script>
+</body>
+</html>

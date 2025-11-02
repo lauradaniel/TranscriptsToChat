@@ -1,0 +1,227 @@
+/* CSS Additions for Scrollable Table with Fixed Headers */
+
+/* Ensure the main containers use full height */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent page scroll */
+}
+
+.landing-page {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.landing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+}
+
+.ngnx-xo-project-header {
+    flex-shrink: 0; /* Don't shrink the header */
+}
+
+.landing-main {
+    flex: 1; /* Take up remaining space */
+    display: flex;
+    /*flex-direction: column;*/
+    overflow: hidden;
+    min-height: 0; /* Important for Firefox */
+}
+
+/* Ensure resultsPanel also uses proper flex */
+#resultsPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.ngnx-main-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ngnx-main-panel__header {
+    flex-shrink: 0;
+}
+
+.ngnx-main-panel__body {
+    flex: 1;
+    overflow: auto; /* Admin table needs to scroll */
+    min-height: 0;
+}
+
+/* Table wrapper and scrolling styles */
+.table-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chatSummaryTable {
+    width: 100%;
+    border-collapse: collapse;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+#chatSummaryTableHead {
+    display: block;
+    width: 100%;
+    height: 45px;
+    flex-shrink: 0; /* Keep header at top */
+    background: #f6f9fb; /* Optional: different background for header */
+    border: 1px solid #DAE1E6;
+    opacity: 1;
+}
+
+#chatSummaryTableHead tr {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+#chatSummaryTableHead th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    
+}
+
+#chatSummaryTableHead th:last-child {
+    border-right: none;
+}
+
+#chatSummaryTableBody {
+    display: block;
+    flex: 1;
+    overflow-y: auto; /* Vertical scroll for body */
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* Scrollbar styling (optional - for better appearance) */
+#chatSummaryTableBody::-webkit-scrollbar {
+    width: 12px;
+}
+
+#chatSummaryTableBody::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#chatSummaryTableBody::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#chatSummaryTableBody::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+#chatSummaryTableBody tr {
+    display: flex;
+    width: 100%;
+    border-bottom: 1px solid #DAE1E6;
+    height: 40px;
+}
+
+#chatSummaryTableBody tr:hover {
+    background-color: #f9f9f9;
+}
+
+#chatSummaryTableBody td {
+    padding: 10px 8px;
+    
+}
+
+#chatSummaryTableBody td:last-child {
+    border-right: none;
+}
+
+/* Ensure columns stay aligned between header and body */
+#chatSummaryTable td {
+    box-sizing: border-box;
+    letter-spacing: var(--unnamed-character-spacing-0);
+    color: var(--unnamed-color-2e2e2e);
+    text-align: left;
+    font: normal normal normal 13px/18px "Open Sans", Arial, sans-serif;
+    letter-spacing: 0px;
+    color: #2E2E2E;
+    opacity: 1;
+}
+#chatSummaryTable th {
+    box-sizing: border-box;
+    letter-spacing: var(--unnamed-character-spacing-0);
+    color: var(--icon-color-new);
+    text-align: left;
+    font: normal normal normal 13px/18px "Open Sans", Arial, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0px;
+    color: #526B7A;
+    text-transform: uppercase;
+    opacity: 1
+}
+/* Sort icon styling */
+.sort-icon {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 0.8em;
+    opacity: 0.3;
+}
+
+.sort-icon.asc::after {
+    content: '▲';
+    opacity: 1;
+}
+
+.sort-icon.desc::after {
+    
+    opacity: 1;
+}
+
+.sortable-column {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable-column:hover {
+    background-color: #e8e8e8;
+}
+
+/* Drag and drop styling */
+.dragging {
+    opacity: 0.5;
+    background-color: #e0e0e0;
+}
+
+.drag-over-left {
+    border-left: 3px solid #4CAF50;
+}
+
+.drag-over-right {
+    border-right: 3px solid #4CAF50;
+}
+
+/* AI Chat icon hover effect */
+#chatSummaryTableBody img[alt="Chat"] {
+    transition: transform 0.2s;
+}
+
+#chatSummaryTableBody img[alt="Chat"]:hover {
+    transform: scale(1.2);
+}

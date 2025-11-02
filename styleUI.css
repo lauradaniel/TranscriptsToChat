@@ -1,0 +1,1392 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root {
+  --ngnx-spacing-4: 4px;
+  --ngnx-spacing-8: 8px;
+  --ngnx-spacing-12: 12px;
+  --ngnx-spacing-16: 16px;
+  --ngnx-spacing-20: 20px;
+  --ngnx-spacing-24: 24px;
+  --ngnx-spacing-28: 28px;
+  --ngnx-spacing-32: 32px;
+  --ngnx-spacing-36: 36px;
+  --ngnx-spacing-40: 40px;
+  --ngnx-spacing-44: 44px;
+  --ngnx-spacing-48: 48px;
+  --ngnx-spacing-52: 52px;
+  --ngnx-spacing-56: 56px;
+  --ngnx-spacing-60: 60px;
+  --ngnx-spacing-64: 64px;
+  --ngnx-spacing-68: 68px;
+  --ngnx-color-accent-teal-5: hsl(180, 70%, 97%);
+  --ngnx-color-accent-teal-20: hsl(180, 59%, 92%);
+  --ngnx-color-accent-teal-150: hsl(184, 41%, 85%);
+  --ngnx-color-accent-teal-200: hsl(185, 36%, 82%);
+  --ngnx-color-accent-teal-250: hsl(188, 35%, 78%);
+  --ngnx-color-accent-teal-300: hsl(188, 30%, 71%);
+  --ngnx-color-accent-teal-350: hsl(189, 28%, 65%);
+  --ngnx-color-accent-teal-400: hsl(191, 28%, 61%);
+  --ngnx-color-accent-teal-450: hsl(190, 27%, 57%);
+  --ngnx-color-accent-teal-500: hsl(192, 26%, 51%);
+  --ngnx-color-accent-teal-550: hsl(192, 30%, 46%);
+  --ngnx-color-accent-teal-600: hsl(192, 33%, 44%);
+  --ngnx-color-accent-teal-650: hsl(193, 37%, 40%);
+  --ngnx-color-accent-teal-700: hsl(193, 43%, 37%);
+  --ngnx-color-accent-teal-750: hsl(193, 57%, 30%);
+  --ngnx-color-accent-teal-800: hsl(193, 75%, 21%);
+  --ngnx-color-accent-navy-5: hsl(219, 70%, 97%);
+  --ngnx-color-accent-navy-20: hsl(219, 59%, 92%);
+  --ngnx-color-accent-navy-150: hsl(221, 44%, 86%);
+  --ngnx-color-accent-navy-200: hsl(223, 42%, 83%);
+  --ngnx-color-accent-navy-250: hsl(225, 40%, 80%);
+  --ngnx-color-accent-navy-300: hsl(226, 37%, 73%);
+  --ngnx-color-accent-navy-350: hsl(227, 35%, 67%);
+  --ngnx-color-accent-navy-400: hsl(228, 34%, 64%);
+  --ngnx-color-accent-navy-450: hsl(227, 33%, 61%);
+  --ngnx-color-accent-navy-500: hsl(228, 33%, 54%);
+  --ngnx-color-accent-navy-550: hsl(228, 32%, 50%);
+  --ngnx-color-accent-navy-600: hsl(228, 35%, 48%);
+  --ngnx-color-accent-navy-650: hsl(229, 39%, 45%);
+  --ngnx-color-accent-navy-700: hsl(229, 44%, 42%);
+  --ngnx-color-accent-navy-750: hsl(229, 57%, 35%);
+  --ngnx-color-accent-navy-800: hsl(228, 77%, 25%);
+  --ngnx-color-accent-indigo-5: hsl(261, 70%, 97%);
+  --ngnx-color-accent-indigo-20: hsl(261, 59%, 92%);
+  --ngnx-color-accent-indigo-150: hsl(264, 44%, 86%);
+  --ngnx-color-accent-indigo-200: hsl(264, 43%, 83%);
+  --ngnx-color-accent-indigo-250: hsl(263, 40%, 80%);
+  --ngnx-color-accent-indigo-300: hsl(265, 37%, 73%);
+  --ngnx-color-accent-indigo-350: hsl(265, 35%, 67%);
+  --ngnx-color-accent-indigo-400: hsl(266, 34%, 64%);
+  --ngnx-color-accent-indigo-450: hsl(266, 33%, 61%);
+  --ngnx-color-accent-indigo-500: hsl(266, 33%, 54%);
+  --ngnx-color-accent-indigo-550: hsl(266, 32%, 50%);
+  --ngnx-color-accent-indigo-600: hsl(267, 35%, 48%);
+  --ngnx-color-accent-indigo-650: hsl(267, 39%, 45%);
+  --ngnx-color-accent-indigo-700: hsl(267, 44%, 42%);
+  --ngnx-color-accent-indigo-750: hsl(267, 57%, 35%);
+  --ngnx-color-accent-indigo-800: hsl(267, 77%, 25%);
+  --ngnx-color-accent-purple-5: hsl(300, 70%, 97%);
+  --ngnx-color-accent-purple-20: hsl(300, 59%, 92%);
+  --ngnx-color-accent-purple-150: hsl(304, 46%, 86%);
+  --ngnx-color-accent-purple-200: hsl(305, 42%, 83%);
+  --ngnx-color-accent-purple-250: hsl(306, 41%, 81%);
+  --ngnx-color-accent-purple-300: hsl(307, 36%, 74%);
+  --ngnx-color-accent-purple-350: hsl(309, 35%, 67%);
+  --ngnx-color-accent-purple-400: hsl(310, 34%, 64%);
+  --ngnx-color-accent-purple-450: hsl(310, 34%, 61%);
+  --ngnx-color-accent-purple-500: hsl(309, 33%, 55%);
+  --ngnx-color-accent-purple-550: hsl(310, 32%, 50%);
+  --ngnx-color-accent-purple-600: hsl(310, 35%, 48%);
+  --ngnx-color-accent-purple-650: hsl(311, 39%, 45%);
+  --ngnx-color-accent-purple-700: hsl(311, 44%, 42%);
+  --ngnx-color-accent-purple-750: hsl(311, 57%, 35%);
+  --ngnx-color-accent-purple-800: hsl(310, 77%, 25%);
+  --ngnx-color-accent-maroon-5: hsl(339, 70%, 97%);
+  --ngnx-color-accent-maroon-20: hsl(339, 59%, 92%);
+  --ngnx-color-accent-maroon-150: hsl(343, 46%, 86%);
+  --ngnx-color-accent-maroon-200: hsl(345, 42%, 83%);
+  --ngnx-color-accent-maroon-250: hsl(347, 39%, 80%);
+  --ngnx-color-accent-maroon-300: hsl(347, 36%, 74%);
+  --ngnx-color-accent-maroon-350: hsl(348, 35%, 67%);
+  --ngnx-color-accent-maroon-400: hsl(349, 34%, 64%);
+  --ngnx-color-accent-maroon-450: hsl(349, 34%, 61%);
+  --ngnx-color-accent-maroon-500: hsl(350, 33%, 55%);
+  --ngnx-color-accent-maroon-550: hsl(350, 32%, 50%);
+  --ngnx-color-accent-maroon-600: hsl(349, 35%, 48%);
+  --ngnx-color-accent-maroon-650: hsl(350, 39%, 45%);
+  --ngnx-color-accent-maroon-700: hsl(350, 44%, 42%);
+  --ngnx-color-accent-maroon-750: hsl(351, 57%, 35%);
+  --ngnx-color-accent-maroon-800: hsl(348, 77%, 25%);
+  --ngnx-color-accent-brown-5: hsl(21, 70%, 97%);
+  --ngnx-color-accent-brown-20: hsl(21, 59%, 92%);
+  --ngnx-color-accent-brown-150: hsl(22, 46%, 86%);
+  --ngnx-color-accent-brown-200: hsl(22, 42%, 83%);
+  --ngnx-color-accent-brown-250: hsl(23, 39%, 80%);
+  --ngnx-color-accent-brown-300: hsl(23, 36%, 74%);
+  --ngnx-color-accent-brown-350: hsl(23, 35%, 67%);
+  --ngnx-color-accent-brown-400: hsl(23, 34%, 64%);
+  --ngnx-color-accent-brown-450: hsl(23, 34%, 61%);
+  --ngnx-color-accent-brown-500: hsl(24, 33%, 55%);
+  --ngnx-color-accent-brown-550: hsl(24, 32%, 50%);
+  --ngnx-color-accent-brown-600: hsl(24, 35%, 48%);
+  --ngnx-color-accent-brown-650: hsl(23, 39%, 45%);
+  --ngnx-color-accent-brown-700: hsl(24, 44%, 42%);
+  --ngnx-color-accent-brown-750: hsl(24, 57%, 35%);
+  --ngnx-color-accent-brown-800: hsl(25, 77%, 25%);
+  --ngnx-color-accent-olive-5: hsl(60, 70%, 97%);
+  --ngnx-color-accent-olive-20: hsl(60, 59%, 92%);
+  --ngnx-color-accent-olive-150: hsl(64, 46%, 86%);
+  --ngnx-color-accent-olive-200: hsl(65, 42%, 83%);
+  --ngnx-color-accent-olive-250: hsl(66, 39%, 80%);
+  --ngnx-color-accent-olive-300: hsl(67, 36%, 74%);
+  --ngnx-color-accent-olive-350: hsl(69, 35%, 67%);
+  --ngnx-color-accent-olive-400: hsl(70, 34%, 64%);
+  --ngnx-color-accent-olive-450: hsl(70, 34%, 61%);
+  --ngnx-color-accent-olive-500: hsl(69, 33%, 55%);
+  --ngnx-color-accent-olive-550: hsl(70, 32%, 50%);
+  --ngnx-color-accent-olive-600: hsl(70, 35%, 48%);
+  --ngnx-color-accent-olive-650: hsl(71, 39%, 45%);
+  --ngnx-color-accent-olive-700: hsl(71, 44%, 42%);
+  --ngnx-color-accent-olive-750: hsl(71, 57%, 35%);
+  --ngnx-color-accent-olive-800: hsl(72, 77%, 25%);
+  --ngnx-color-accent-forest-5: hsl(99, 70%, 97%);
+  --ngnx-color-accent-forest-20: hsl(99, 59%, 92%);
+  --ngnx-color-accent-forest-150: hsl(103, 46%, 86%);
+  --ngnx-color-accent-forest-200: hsl(105, 42%, 83%);
+  --ngnx-color-accent-forest-250: hsl(107, 39%, 80%);
+  --ngnx-color-accent-forest-300: hsl(107, 36%, 74%);
+  --ngnx-color-accent-forest-350: hsl(108, 35%, 67%);
+  --ngnx-color-accent-forest-400: hsl(109, 34%, 64%);
+  --ngnx-color-accent-forest-450: hsl(109, 34%, 61%);
+  --ngnx-color-accent-forest-500: hsl(110, 33%, 55%);
+  --ngnx-color-accent-forest-550: hsl(110, 32%, 50%);
+  --ngnx-color-accent-forest-600: hsl(109, 35%, 48%);
+  --ngnx-color-accent-forest-650: hsl(110, 39%, 45%);
+  --ngnx-color-accent-forest-700: hsl(110, 44%, 42%);
+  --ngnx-color-accent-forest-750: hsl(111, 57%, 35%);
+  --ngnx-color-accent-forest-800: hsl(111, 77%, 25%);
+  --ngnx-color-accent-jade-5: hsl(141, 70%, 97%);
+  --ngnx-color-accent-jade-20: hsl(141, 59%, 92%);
+  --ngnx-color-accent-jade-150: hsl(144, 46%, 86%);
+  --ngnx-color-accent-jade-200: hsl(147, 42%, 83%);
+  --ngnx-color-accent-jade-250: hsl(147, 39%, 80%);
+  --ngnx-color-accent-jade-300: hsl(149, 36%, 74%);
+  --ngnx-color-accent-jade-350: hsl(151, 35%, 67%);
+  --ngnx-color-accent-jade-400: hsl(150, 34%, 64%);
+  --ngnx-color-accent-jade-450: hsl(151, 34%, 61%);
+  --ngnx-color-accent-jade-500: hsl(152, 33%, 55%);
+  --ngnx-color-accent-jade-550: hsl(153, 32%, 50%);
+  --ngnx-color-accent-jade-600: hsl(152, 35%, 48%);
+  --ngnx-color-accent-jade-650: hsl(153, 39%, 45%);
+  --ngnx-color-accent-jade-700: hsl(153, 44%, 42%);
+  --ngnx-color-accent-jade-750: hsl(153, 57%, 35%);
+  --ngnx-color-accent-jade-800: hsl(153, 77%, 25%);
+  --ngnx-color-accent-slate-5: hsl(210, 8%, 97%);
+  --ngnx-color-accent-slate-20: hsl(210, 8%, 95%);
+  --ngnx-color-accent-slate-150: hsl(200, 7%, 91%);
+  --ngnx-color-accent-slate-200: hsl(195, 7%, 89%);
+  --ngnx-color-accent-slate-250: hsl(210, 9%, 87%);
+  --ngnx-color-accent-slate-300: hsl(206, 8%, 83%);
+  --ngnx-color-accent-slate-350: hsl(207, 8%, 79%);
+  --ngnx-color-accent-slate-400: hsl(204, 8%, 76%);
+  --ngnx-color-accent-slate-450: hsl(202, 8%, 74%);
+  --ngnx-color-accent-slate-500: hsl(205, 8%, 70%);
+  --ngnx-color-accent-slate-550: hsl(198, 8%, 67%);
+  --ngnx-color-accent-slate-600: hsl(201, 8%, 66%);
+  --ngnx-color-accent-slate-650: hsl(200, 8%, 64%);
+  --ngnx-color-accent-slate-700: hsl(204, 8%, 62%);
+  --ngnx-color-accent-slate-750: hsl(201, 8%, 57%);
+  --ngnx-color-accent-slate-800: hsl(198, 6%, 43%);
+  --ngnx-color-accent-umber-5: hsl(30, 7%, 97%);
+  --ngnx-color-accent-umber-20: hsl(30, 7%, 95%);
+  --ngnx-color-accent-umber-150: hsl(30, 8%, 90%);
+  --ngnx-color-accent-umber-200: hsl(30, 6%, 87%);
+  --ngnx-color-accent-umber-250: hsl(30, 8%, 85%);
+  --ngnx-color-accent-umber-300: hsl(26, 7%, 80%);
+  --ngnx-color-accent-umber-350: hsl(30, 8%, 75%);
+  --ngnx-color-accent-umber-400: hsl(30, 7%, 73%);
+  --ngnx-color-accent-umber-450: hsl(30, 8%, 71%);
+  --ngnx-color-accent-umber-500: hsl(28, 7%, 66%);
+  --ngnx-color-accent-umber-550: hsl(28, 8%, 63%);
+  --ngnx-color-accent-umber-600: hsl(28, 8%, 61%);
+  --ngnx-color-accent-umber-650: hsl(30, 8%, 58%);
+  --ngnx-color-accent-umber-700: hsl(28, 8%, 56%);
+  --ngnx-color-accent-umber-750: hsl(28, 8%, 51%);
+  --ngnx-color-accent-umber-800: hsl(30, 11%, 35%);
+  --ngnx-color-application-glue-5: hsl(195, 15%, 95%);
+  --ngnx-color-application-glue-20: hsl(195, 10%, 92%);
+  --ngnx-color-application-glue-70: hsl(200, 11%, 84%);
+  --ngnx-color-application-glue-140: hsl(198, 10%, 80%);
+  --ngnx-color-application-glue-210: hsl(200, 10%, 76%);
+  --ngnx-color-application-glue-280: hsl(199, 10%, 68%);
+  --ngnx-color-application-glue-350: hsl(200, 10%, 60%);
+  --ngnx-color-application-glue-420: hsl(199, 10%, 56%);
+  --ngnx-color-application-glue-490: hsl(199, 10%, 52%);
+  --ngnx-color-application-glue-560: hsl(201, 13%, 45%);
+  --ngnx-color-application-glue-630: hsl(199, 16%, 38%);
+  --ngnx-color-application-glue-700: hsl(200, 18%, 37%);
+  --ngnx-color-application-glue-770: hsl(201, 21%, 33%);
+  --ngnx-color-application-glue-850: hsl(198, 26%, 28%);
+  --ngnx-color-application-glue-920: hsl(199, 38%, 21%);
+  --ngnx-color-application-glue-990: hsl(198, 38%, 9%);
+  --ngnx-color-application-glue-a-2: hsla(199, 38%, 21%, .02);
+  --ngnx-color-application-glue-a-4: hsla(199, 38%, 21%, .04);
+  --ngnx-color-application-glue-a-20: hsla(199, 38%, 21%, .1);
+  --ngnx-color-application-glue-a-70: hsla(199, 38%, 21%, .2);
+  --ngnx-color-application-glue-a-140: hsla(199, 38%, 21%, .25);
+  --ngnx-color-application-glue-a-210: hsla(199, 38%, 21%, .3);
+  --ngnx-color-application-glue-a-280: hsla(199, 38%, 21%, .4);
+  --ngnx-color-application-glue-a-350: hsla(199, 38%, 21%, .5);
+  --ngnx-color-application-glue-a-420: hsla(199, 38%, 21%, .55);
+  --ngnx-color-application-glue-a-490: hsla(199, 38%, 21%, .6);
+  --ngnx-color-application-glue-a-560: hsla(199, 38%, 21%, .7);
+  --ngnx-color-application-glue-a-630: hsla(199, 38%, 21%, .78);
+  --ngnx-color-application-glue-a-700: hsla(199, 38%, 21%, .8);
+  --ngnx-color-application-glue-a-770: hsla(199, 38%, 21%, .85);
+  --ngnx-color-application-glue-a-850: hsla(199, 38%, 21%, .9);
+  --ngnx-color-application-white-a-10: hsla(0, 0%, 100%, .1);
+  --ngnx-color-application-white-a-20: hsla(0, 0%, 100%, .2);
+  --ngnx-color-application-white-a-30: hsla(0, 0%, 100%, .3);
+  --ngnx-color-application-neutral-0: hsl(0, 100%, 100%);
+  --ngnx-color-application-neutral-900: hsl(0, 0%, 18%);
+  --ngnx-color-application-surface-20: hsl(204, 38%, 97%);
+  --ngnx-color-application-surface-50: hsl(208, 40%, 92%);
+  --ngnx-color-application-surface-500: hsl(203, 20%, 40%);
+  --ngnx-color-application-font-0: hsl(0, 100%, 100%);
+  --ngnx-color-application-font-400: hsl(203, 20%, 60%);
+  --ngnx-color-application-font-600: hsl(203, 20%, 40%);
+  --ngnx-color-application-font-900: hsl(0, 0%, 18%);
+  --ngnx-height-input-form: 30px;
+  --ngnx-color-domain-sentiment-negative-50: hsl(22, 92%, 95%);
+  --ngnx-color-domain-sentiment-negative-100: hsl(19, 81%, 92%);
+  --ngnx-color-domain-sentiment-negative-150: hsl(16, 78%, 89%);
+  --ngnx-color-domain-sentiment-negative-200: hsl(15, 72%, 83%);
+  --ngnx-color-domain-sentiment-negative-250: hsl(14, 72%, 82%);
+  --ngnx-color-domain-sentiment-negative-300: hsl(13, 69%, 77%);
+  --ngnx-color-domain-sentiment-negative-350: hsl(12, 69%, 72%);
+  --ngnx-color-domain-sentiment-negative-400: hsl(11, 68%, 63%);
+  --ngnx-color-domain-sentiment-negative-700: hsl(11, 59%, 44%);
+  --ngnx-color-domain-sentiment-positive-50: hsl(201, 50%, 95%);
+  --ngnx-color-domain-sentiment-positive-100: hsl(200, 50%, 91%);
+  --ngnx-color-domain-sentiment-positive-150: hsl(201, 51%, 88%);
+  --ngnx-color-domain-sentiment-positive-200: hsl(202, 53%, 81%);
+  --ngnx-color-domain-sentiment-positive-250: hsl(203, 52%, 79%);
+  --ngnx-color-domain-sentiment-positive-300: hsl(202, 52%, 74%);
+  --ngnx-color-domain-sentiment-positive-350: hsl(203, 52%, 68%);
+  --ngnx-color-domain-sentiment-positive-400: hsl(202, 52%, 57%);
+  --ngnx-color-domain-sentiment-positive-700: hsl(202, 68%, 29%);
+  --ngnx-color-domain-sentiment-neutral-20: hsl(0, 0%, 97%);
+  --ngnx-color-domain-sentiment-neutral-50: hsl(180, 7%, 95%);
+  --ngnx-color-domain-sentiment-neutral-80: hsl(195, 10%, 92%);
+  --ngnx-color-domain-sentiment-neutral-250: hsl(180, 2%, 76%);
+  --ngnx-color-domain-sentiment-neutral-400: hsl(0, 0%, 60%);
+  --ngnx-color-domain-sentiment-neutral-600: hsl(180, 5%, 40%);
+  --ngnx-color-context-error-50: hsl(349, 73%, 96%);
+  --ngnx-color-context-error-300: hsl(8, 67%, 74%);
+  --ngnx-color-context-error-500: hsl(8, 77%, 47%);
+  --ngnx-color-context-error-600: hsl(8, 77%, 42%);
+  --ngnx-color-context-error-700: hsl(8, 77%, 38%);
+  --ngnx-color-context-warning-50: hsl(41, 100%, 91%);
+  --ngnx-color-context-warning-500: hsl(42, 97%, 55%);
+  --ngnx-color-context-warning-600: hsl(42, 78%, 50%);
+  --ngnx-color-context-warning-700: hsl(42, 78%, 46%);
+  --ngnx-color-context-success-50: hsl(160, 35%, 93%);
+  --ngnx-color-context-success-300: hsl(152, 28%, 61%);
+  --ngnx-color-context-success-500: hsl(152, 100%, 22%);
+  --ngnx-color-context-success-600: hsl(152, 100%, 17%);
+  --ngnx-color-context-success-700: hsl(152, 100%, 15%);
+  --ngnx-color-branding-primary-5: hsl(201, 69%, 97%);
+  --ngnx-color-branding-primary-20: hsl(201, 63%, 94%);
+  --ngnx-color-branding-primary-70: hsl(201, 59%, 87%);
+  --ngnx-color-branding-primary-140: hsl(201, 60%, 84%);
+  --ngnx-color-branding-primary-210: hsl(201, 59%, 81%);
+  --ngnx-color-branding-primary-280: hsl(201, 59%, 75%);
+  --ngnx-color-branding-primary-350: hsl(201, 59%, 68%);
+  --ngnx-color-branding-primary-420: hsl(201, 59%, 65%);
+  --ngnx-color-branding-primary-490: hsl(201, 59%, 62%);
+  --ngnx-color-branding-primary-560: hsl(201, 59%, 56%);
+  --ngnx-color-branding-primary-630: hsl(201, 59%, 51%);
+  --ngnx-color-branding-primary-700: hsl(201, 60%, 50%);
+  --ngnx-color-branding-primary-770: hsl(201, 68%, 46%);
+  --ngnx-color-branding-primary-850: hsl(201, 77%, 43%);
+  --ngnx-color-branding-primary-920: hsl(201, 100%, 37%);
+  --ngnx-color-branding-primary-970: hsl(201, 100%, 33%);
+  --ngnx-color-branding-primary-990: hsl(201, 100%, 29%);
+  --ngnx-color-branding-primary-a-5: hsla(201, 100%, 37%, .05);
+  --ngnx-color-branding-primary-a-20: hsla(201, 100%, 37%, .1);
+  --ngnx-color-branding-primary-a-70: hsla(201, 100%, 37%, .2);
+  --ngnx-color-branding-primary-a-140: hsla(201, 100%, 37%, .25);
+  --ngnx-color-branding-primary-a-210: hsla(201, 100%, 37%, .3);
+  --ngnx-color-branding-primary-a-280: hsla(201, 100%, 37%, .4);
+  --ngnx-color-branding-primary-a-350: hsla(201, 100%, 37%, .5);
+  --ngnx-color-branding-primary-a-420: hsla(201, 100%, 37%, .55);
+  --ngnx-color-branding-primary-a-490: hsla(201, 100%, 37%, .6);
+  --ngnx-color-branding-primary-a-560: hsla(201, 100%, 37%, .7);
+  --ngnx-color-branding-primary-a-630: hsla(201, 100%, 37%, .78);
+  --ngnx-color-branding-primary-a-700: hsla(201, 100%, 37%, .8);
+  --ngnx-color-branding-primary-a-770: hsla(201, 100%, 37%, .85);
+  --ngnx-color-branding-primary-a-850: hsla(201, 100%, 37%, .9);
+  --ngnx-color-branding-secondary-600: hsl(187, 100%, 41%);
+  --font-family-open-sans: "Open Sans", sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-tiny: 8px;
+  --font-size-extra-small: 10px;
+  --font-size-small: 12px;
+  --font-size-default: 14px;
+  --font-size-medium: 18px;
+  --font-size-large: 22px;
+  --font-size-extra-large: 28px;
+  --font-size-huge: 32px;
+  --border-radius: 3px;
+  --border-width: 1px;
+  --border-style: solid;
+  --ngnx-shadow-l1-all: 0px 0px 6px 0px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l1-top: 0px 6px 4px -3px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l1-left: 2px 0px 6px -2px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l1-right: -2px 0px 6px -2px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l1-bottom: 0px -2px 6px -2px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l2-all: 0px 0px 12px 0px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-l2-top: 0px 2px 12px 0px hsla(199, 38%, 21%, .2);
+  --ngnx-shadow-1: 0 1px 6px hsla(204, 33%, 6%, .24);
+  --ngnx-shadow-3: 0 2px 2px hsla(204, 33%, 6%, .24), 0 0 2px hsla(204, 33%, 6%, .12);
+  --ngnx-shadow-5: 0px 3px 6px hsla(0, 0%, 18%, .22);
+  --ngnx-shadow-7: 0px 1px 0px hsl(206, 13%, 90%);
+  --ngnx-shadow-9: 0px 2px 6px hsla(240, 100%, 5%, .3);
+  --ngnx-shadow-10: 0px 1px 2px hsla(212, 57%, 45%, .26);
+  --ngnx-shadow-11: 3px 0px 4px hsla(0, 0%, 0%, .16);
+  --ngnx-shadow-12: -3px 0px 4px hsla(0, 0%, 0%, .16);
+  --ngnx-shadow-13: 0px 1px 3px hsla(199, 38%, 21%, .1);
+}
+html *, html *:before, html *:after, body *, body *:before, body *:after {
+  font-family: var(--font-family-open-sans);
+  box-sizing: inherit;
+}
+body {
+  font-family: 'Open Sans', sans-serif;
+  background: #E1EAF2;
+  min-height: 100vh;
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem 32px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+/* Force hiding elements when .hidden is applied */
+.hidden {
+    display: none;
+    visibility: hidden;
+  }
+
+/* Landing Page Styles */
+.landing-page {
+  display: flex;
+  height: 100vh;
+  background: #E2EBF3; /* was hsl(208, 40%, 92%) */
+}
+
+.ngnx-app-shell__navigation-bar {
+  border-color: #d2d8db;
+  border-width: 0px 1px 0px 0px;
+  border-style: solid;
+  height: 100%;
+  width: 59px;
+  background: white;
+}
+
+.landing-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ngnx-xo-project-header {
+  background-color: white;
+  border-bottom: 1px solid #D3D9DE; /* was hsl(208, 15%, 85%) */
+  margin: 0;
+  padding: 20px 32px 15px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ngnx-xo-project-header__title {
+  margin: 0 20px 0 0;
+  font-size: 18px;
+  color: #333333; /* was hsl(0, 0%, 20%) */
+  font-weight: 600;
+}
+
+.ngnx-xo-header__title-button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ngnx-button {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+  vertical-align: middle;
+  text-align: center;
+  border-style: solid;
+  outline: none;
+  cursor: pointer;
+  border-width: 1px;
+}
+
+.ngnx-button--medium {
+  padding-left: 16px;
+  padding-right: 16px;
+  font-size: 13px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.ngnx-button--primary {
+  color: #FFFFFF; /* was hsl(0, 100%, 100%) */
+  background-color: #007BBD; /* was hsl(201, 100%, 37%) */
+  border-color: #007BBD; /* was hsl(201, 100%, 37%) */
+  fill: #FFFFFF; /* was hsl(0, 100%, 100%) */
+}
+
+.ngnx-button--primary:hover {
+  background-color: #006AA3; /* was hsl(201, 100%, 32%) */
+  border-color: #006AA3; /* was hsl(201, 100%, 32%) */
+}
+
+.ngnx-button__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ngnx-button__label {
+  white-space: nowrap;
+}
+
+.landing-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px;
+}
+
+.landing-welcome {
+  text-align: center;
+  color: #4C4C4C; /* was hsl(0, 0%, 30%) */
+}
+.bkrnd-icon-size {
+ display: block;
+ padding-top: 60px;
+ width: 700px;
+ padding-right: 40px;
+}
+.landing-welcome h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #333333; /* was hsl(0, 0%, 20%) */
+}
+
+.landing-welcome p {
+  font-size: 1.125rem;
+  color: #666666; /* was hsl(0, 0%, 40%) */
+}
+
+/* ===== Create Project Slide-in Panel ===== */
+.ngnx-xo-create-project-container {
+  width: 400px;
+  position: fixed !important;
+  z-index: 1000;
+  height: 100%;
+  top: 0;
+  right: 0;
+  overflow: auto;
+  transition: transform .5s ease;
+  box-shadow: 0 10px 10px #d0d2d3;
+  background: var(--ngnx-color-application-surface-0, #fff);
+  /* start off-canvas */
+  transform: translateX(100%);
+}
+.ngnx-xo-create-project-container.is-open {
+  transform: translateX(0);
+}
+
+/* Keep header icon hidden for this specific panel */
+.ngnx-xo-create-project-container .ngnx-side-panel-header__icon {
+  width: 0;
+  margin-right: 0;
+}
+
+/* ===== Side Panel Base Styles (as provided) ===== */
+.ngnx-side-panel--position-right {
+  box-shadow: var(--ngnx-shadow-l1-right, 0 0 16px rgba(0,0,0,0.12));
+  right: 0;
+  order: 2;
+}
+.ngnx-side-panel--overlay {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+.ngnx-side-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 400px;
+  z-index: 3;
+  flex-shrink: 0;
+}
+.ngnx-side-panel-header--size-large {
+  min-height: 60px;
+}
+
+.ngnx-side-panel-header {
+  background-color: var(--ngnx-color-application-surface-20, #f7f8f9);
+  border-bottom-color: var(--ngnx-color-application-glue-20, #e2e8f0);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-inline: 12px;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+/* Header bits */
+.ngnx-side-panel-header__icon {
+  fill: var(--ngnx-color-branding-primary-850, #004a75);
+  height: 20px;
+  width: 20px;
+  margin-right: 8px;
+}
+.ngnx-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0;
+}
+.ngnx-side-panel-header__text {
+  color: var(--ngnx-color-application-surface-500, #4a5568);
+  font-family: var(--font-family-open-sans, 'Open Sans', sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+}
+.ngnx-ghost-button--medium.ngnx-ghost-button--icon-only {
+  padding-inline: 0px;
+  width: 28px;
+  height: 28px;
+}
+.ngnx-side-panel-header__close-button {
+  fill: var(--ngnx-color-branding-primary-700, #0b5e86);
+  margin-left: auto;
+}
+.ngnx-ghost-button--medium {
+  padding-inline: 16px;
+  font-size: 13px;
+  height: 28px;
+  border-radius: 4px;
+}
+.ngnx-ghost-button {
+  font-family: var(--font-family-open-sans, 'Open Sans', sans-serif);
+  font-weight: var(--font-weight-semibold, 600);
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+  vertical-align: middle;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  color: var(--ngnx-ghost-button-foreground-color, #334155);
+  fill: var(--ngnx-ghost-button-foreground-color, #334155);
+  gap: 4px;
+  border-width: 1px;
+  border-color: transparent;
+  background-color: transparent;
+  background-repeat: no-repeat;
+}
+.ngnx-ghost-button--medium .ngnx-icon {
+  height: 16px;
+  width: 16px;
+}
+
+/* Panel body basic spacing */
+.ngnx-side-panel__body {
+  width: 100%;
+  padding: 16px;
+}
+.ngnx-panel-body-inner {
+  display: grid;
+  gap: 12px;
+}
+.ngnx-field-label {
+  font-size: 12px;
+  color: #444;
+}
+.ngnx-input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  width: 100%;
+}
+
+/* Ensure .hidden truly hides (already present, but keeping consistent) */
+.hidden {
+  display: none !important;
+  visibility: hidden !important;
+}
+/* ===== Create Project: body wrapper & spacing ===== */
+.ngnx-xo-create-project-container__side-panel-body-wrapper {
+  overflow: auto;
+  height: calc(100vh - 60px); /* header height compensation */
+  max-height: calc(100vh - 60px);
+  position: relative; /* anchors the button bar */
+}
+
+.ngnx-xo-create-project-container__sidebar-padding {
+  padding: 1rem;
+}
+.ngnx-side-panel-body {
+  background-color: var(--ngnx-color-application-neutral-0);
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Form labels */
+.ngnx-form-field__label {
+  font-family: var(--font-family-open-sans);
+  font-weight: var(--font-weight-semibold);
+  color: var(--ngnx-color-application-font-900);
+  display: block;
+  margin: 0 0 2px 0;
+  text-transform: uppercase;
+  font-size: 10px;
+  cursor: default;
+}
+
+/* Input containers & inputs */
+.ngnx-input-text-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  font-size: 13px;
+  position: relative;
+  box-sizing: border-box;
+
+}
+
+.ngnx-input-text-container--no-icons { padding: 0; }
+
+.ngnx-input-text-container--form-type {
+  background-color: var(--ngnx-color-application-neutral-0);
+  /*border-bottom-color: var(--ngnx-color-application-glue-a-490);*/
+}
+
+.ngnx-input-text {
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+  color: var(--ngnx-color-application-glue-920);
+  outline: none;
+  margin: 0;
+  border: 1px solid var(--ngnx-color-application-glue-a-20);
+  border-radius: 4px;
+}
+
+.ngnx-input-text--form-type {
+  border-width: 0;
+  border-radius: 4px;
+}
+
+.ngnx-input-text--small-form-size {
+  height: 28px;
+}
+
+/* Description textarea size */
+.ngnx-xo-create-project-container__sidebar-project-description-textarea {
+  height: 100px;
+  resize: none;
+}
+
+/* Left/right/clear icons (kept minimal) */
+.ngnx-input-text__left-icon,
+.ngnx-input-text__right-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  flex-shrink: 0;
+  fill: var(--ngnx-color-application-surface-500);
+}
+
+/* Field spacing */
+.ngnx-xo-create-project-container__sidebar-form-field {
+  display: block;
+  padding-top: 10px;
+}
+
+/* File upload box */
+.ngnx-xo-create-project-container__sidebar-file-upload-container {
+  width: 100%;
+  padding: 1rem 0;
+  text-align: center;
+  position: relative;
+  margin: 0 auto;
+  background: #F6FAFB;
+  border: 1px dashed rgba(91, 91, 91, .53);
+  border-radius: 3px;
+}
+
+.ngnx-xo-create-project-container__sidebar-file-upload-container input[type="file"] {
+  opacity: 0;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+}
+
+/* Bottom action bar */
+.ngnx-xo-create-project-container__sidebar-button-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--ngnx-color-application-neutral-0);
+
+}
+
+/* Buttons (primary/secondary) */
+.ngnx-button {
+  font-family: var(--font-family-open-sans);
+  font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+  text-align: center;
+  border-style: solid;
+  cursor: pointer;
+  border-width: 1px;
+}
+
+.ngnx-button--medium {
+  padding-left: 16px;
+  padding-right: 16px;
+  font-size: 13px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.ngnx-button__content { display: flex; align-items: center; justify-content: center; }
+
+.ngnx-button--secondary {
+  color: var(--ngnx-color-application-font-900);
+  background-color: var(--ngnx-color-application-neutral-0);
+  border-color: var(--ngnx-color-application-glue-a-20);
+  fill: var(--ngnx-color-application-surface-500);
+}
+.ngnx-button--trans{
+  color: #fff;
+  background-color: #007BBD;
+  border-color: #007BBD;
+  fill: var(--ngnx-color-application-surface-500); 
+}
+.ngnx-xo-create-project-container__sidebar-file-upload-container span {
+  color: var(--ngnx-color-branding-primary-850);
+}
+.ngnx-xo-create-project-container__sidebar-file-upload-container .supported-file-label {
+  font-size: 10px;
+  color: #625c5c;
+  font-weight: 600;
+}
+/* Style Browse button inline with input */
+.ngnx-input-text-container button.ngnx-button--secondary {
+  margin-left: 8px;
+  flex-shrink: 0;
+  height: 28px;
+  font-size: 12px;
+}
+/* Additional styles for project list display */
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.project-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border-color: #0066cc;
+}
+
+.project-card h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.project-card p {
+  margin: 0 0 15px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.project-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: #888;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.project-stats span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+}
+
+.loading::after {
+  content: '...';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.empty-state h3 {
+  margin: 0 0 10px 0;
+  color: #666;
+}
+
+.empty-state p {
+  margin: 0;
+}
+.ngnx-xo-results {
+  /*height: calc(100% - 62px);*/
+  padding: 32px;
+  overflow-y: auto;
+  background-color: var(--ngnx-color-application-surface-50);
+}
+.ngnx-xo-results__panel {
+  margin-bottom: 12px;
+  width: 100%;
+  display: block;
+}
+.ngnx-main-panel {
+  background-color: var(--ngnx-color-application-neutral-0);
+  border-color: var(--ngnx-color-application-glue-140);
+  box-shadow: var(--ngnx-shadow-l2-all);
+  display: flex;
+  flex-direction: row;
+  border-radius: 12px;
+  border-style: solid;
+  border-width: 0px;
+}
+.ngnx-main-panel__content-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  order: 1;
+  min-width: 0;
+}
+.ngnx-main-panel__header {
+  background-color: var(--ngnx-color-application-neutral-0);
+  height: 54px;
+  min-width: 280px;
+  padding: 8px 8px 8px 24px;
+  display: flex
+;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 12px 12px 0 0;
+}
+.ngnx-main-panel__body {
+  background-color: var(--ngnx-color-application-neutral-0);
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow: hidden;
+  border-radius: 0 0 12px 12px;
+  padding: 0 24px 0 24px;
+}
+.ngnx-main-panel__header-title {
+  color: var(--ngnx-color-application-surface-500);
+  font-family: var(--font-family-open-sans);
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0px;
+}
+
+/* Table Styles */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.results-table-head {
+  background: #fff;
+}
+
+.results-table-head th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #526b7a;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom-color: #dfdede !important;
+  background: var(--ngnx-color-application-neutral-0) !important;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  font-weight: 400 !important;
+}
+
+.results-table-body td {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+  vertical-align: middle;
+}
+
+.results-table-body tr:hover {
+  background: #f8f9fa;
+}
+
+.results-table-body tr:last-child td {
+  border-bottom: none;
+}
+/* Delete Column */
+.delete-header {
+  width: 80px;
+  text-align: center;
+}
+
+.delete-cell {
+  text-align: center;
+  width: 80px;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  color: #dc3545;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  background: #fff5f5;
+  color: #c82333;
+  transform: scale(1.1);
+}
+
+.delete-btn:active {
+  transform: scale(0.95);
+}
+
+.delete-btn-disabled {
+  background: transparent;
+  border: none;
+  cursor: not-allowed;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+}
+
+.delete-btn svg,
+.delete-btn-disabled svg {
+  display: block;
+}
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Comment Cell */
+.comment-cell {
+  max-width: 400px;
+  word-wrap: break-word;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Empty State */
+.results-table-body:empty::after {
+  content: 'No results yet. Create a project to see results here.';
+  display: block;
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .results-table {
+    font-size: 13px;
+  }
+  
+  .results-table-head th,
+  .results-table-body td {
+    padding: 12px;
+  }
+  
+  .comment-cell {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .results-table {
+    font-size: 12px;
+  }
+  
+  .results-table-head th,
+  .results-table-body td {
+    padding: 8px;
+  }
+}
+.ngnx-navigation-menu-app__list {
+  height: calc(100% - 36px);
+}
+.ngnx-navigation-menu-app--collapsed, .ngnx-navigation-menu-app__list--collapsed {
+  width: 59px; /* This makes it a narrow bar showing only icons */
+}
+.ngnx-navigation-menu-app, .ngnx-navigation-menu-app__list {
+  /*width: 219px;*/
+  display: block;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ngnx-navigation-menu-app__list-item {
+  margin: 0;
+  list-style: none;
+  padding: 8px;
+  border-color: var(--ngnx-color-branding-primary-70);
+  border-width: 1px 0px 0px 0px;
+  border-style: solid;
+}
+.ngnx-navigation-menu-app__list-item-app {
+  /* ... styling for the click area ... */
+  height: 44px;
+  color: #91959c;
+  /* ... more styling ... */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centers the icon in the collapsed bar */
+}
+.ngnx-navigation-menu-app__list-item-app-icon {
+  /* ... styling for the icon container ... */
+  fill: var(--ngnx-color-accent-teal-700);
+  height: 20px;
+  width: 20px;
+  display: inline-block;
+  pointer-events: none;
+}
+.ngnx-icon>* {
+  height: 100%;
+  width: 100%;
+  display: block;
+  pointer-events: none;
+}
+.ngnx-navigation-menu-app__list-item-app-icon[_ngcontent-ng-c244950455] {
+    border-radius: 4px;
+    fill: var(--ngnx-color-accent-teal-700);
+    height: 32px; /* Increased size */
+    width: 32px; /* Increased size */
+    display: inline-block;
+    pointer-events: none;
+  }
+  .ngnx-icon>* {
+      height: 100%;
+      width: 100%;
+        /* ... */
+    }
+    .ngnx-navigation-menu-app__list-item-app[_ngcontent-ng-c244950455] {
+         height: 50px; /* A small increase from 44px to accommodate the larger icon */
+          /* ... other styles ... */
+      }
+/* Add these styles to your styleUI.css */
+
+/* 1. Ensure Header Elements Align Horizontally */
+.ngnx-xo-project-header {
+  display: flex; /* Makes the title, dropdown, and button align */
+  align-items: center; /* Vertically centers all items */
+  gap: 30px; /* Separates the title from the new dropdown by 30px */
+}
+
+/* 2. Container for the Project Selector */
+.chat-project-selector-container {
+  /* Set a reasonable width for the selector */
+  min-width: 216px;
+  height: 30px;
+  position: relative; /* Essential for positioning the dropdown list */
+  /* Visibility is controlled by JS, but this ensures it doesn't take space when hidden */
+  display: none; 
+  margin-right: auto;
+  justify-content: space-between;
+  font-family: var(--font-family-open-sans);
+  background-color: var(--ngnx-color-application-neutral-0);
+  color: var(--ngnx-color-application-neutral-900);
+  border-color: var(--ngnx-color-application-glue-a-20);
+  border-bottom-color: var(--ngnx-color-application-glue-a-490);
+  font-size: 13px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* 3. Dropdown List Styles */
+.chat-project-dropdown-list {
+  position: absolute;
+  top: 100%; /* Position below the input box */
+  left: 0;
+  z-index: 100; /* Ensure it floats above other elements */
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white; 
+  border: 1px solid var(--ngnx-color-border-default, #ccc);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  padding: 0;
+  margin-top: 2px;
+  border-radius: 4px;
+}
+
+.chat-project-dropdown-list.hidden {
+  display: none;
+}
+
+.chat-project-dropdown-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--ngnx-color-text-default, #333);
+}
+
+.chat-project-dropdown-list li:hover {
+  background-color: var(--ngnx-color-application-glue-10, #f5f5f5);
+  color: var(--ngnx-color-branding-primary-700, #0066cc);
+}
+
+.chat-project-dropdown-list li.no-results {
+  color: #999;
+  cursor: default;
+}      
+/* 2. Style and Position the SVG Arrow */
+.dropdown-arrow-icon {
+  /* Absolute position relative to .ngnx-input-text-container */
+  position: absolute; 
+  
+  /* Place it on the right side, slightly inward from the edge */
+  right: 10px; 
+  
+  /* Vertically center it */
+  top: 50%;
+  transform: translateY(-50%); 
+  
+  /* Set size */
+  width: 20px;
+  height: 20px;
+  
+  /* Style */
+  color: var(--ngnx-color-text-default, #666);
+  pointer-events: none; /* Prevents the SVG from interfering with the input click/focus event */
+  transition: transform 0.2s ease; /* For rotation effect */
+}
+.chat-project-input {
+  /* Increase right padding so text doesn't flow under the arrow */
+  padding-right: 35px !important; 
+}
+/* styleUI.css - Add this new section at the end of the file */
+
+/* ------------------------------------------- */
+/* CHAT SUMMARY TABLE STYLES (New Feature)     */
+/* ------------------------------------------- */
+
+.chat-summary-header {
+  margin-bottom: 20px;
+  padding-left: 10px;
+}
+
+.chat-summary-header h3 {
+  margin-bottom: 5px;
+}
+
+.chat-summary-table-container {
+  overflow-x: auto; 
+  padding: 0 10px; /* Add padding to align with header */
+}
+
+.ngnx-xo-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.ngnx-xo-summary-table th, 
+.ngnx-xo-summary-table td {
+  padding: 12px 15px;
+ /* border-bottom: 1px solid #eee;*/
+  text-align: left;
+  /* Ensure summary text wraps */
+  white-space: normal; 
+}
+
+.ngnx-xo-summary-table th {
+  /*background-color: #f7f9fc;*/
+  color: var(--ngnx-color-text-default, #333);
+  font-weight: 600;
+  position: relative; 
+  user-select: none;
+  white-space: nowrap; /* Keep header text on one line */
+}
+
+/* Sorting Indicator Styles */
+.sortable-column {
+  cursor: pointer;
+}
+
+.sort-icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 8px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  vertical-align: middle;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.sort-icon.asc {
+  border-bottom: 5px solid var(--ngnx-color-branding-primary-700, #0066cc); /* Up arrow */
+  opacity: 1;
+}
+
+.sort-icon.desc {
+  border-top: 5px solid var(--ngnx-color-branding-primary-700, #0066cc); /* Down arrow */
+  opacity: 1;
+}
+
+/* Drag-and-Drop Column Styles */
+.ngnx-xo-summary-table th[draggable="true"] {
+  cursor: grab; 
+}
+
+.ngnx-xo-summary-table th[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.ngnx-xo-summary-table th.dragging {
+  opacity: 0.7;
+  background-color: #e0f0ff;
+  border: 1px solid var(--ngnx-color-branding-primary-700, #0066cc);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Visual cues for drop target */
+.ngnx-xo-summary-table th.drag-over-left {
+  box-shadow: inset 4px 0 0 0 var(--ngnx-color-branding-primary-700, #0066cc);
+}
+
+.ngnx-xo-summary-table th.drag-over-right {
+  box-shadow: inset -4px 0 0 0 var(--ngnx-color-branding-primary-700, #0066cc);
+}
