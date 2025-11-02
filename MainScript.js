@@ -832,6 +832,9 @@ function openAIChat(intent, topic) {
                         Intent: ${rowData.Intent}<br>
                         Agent Task: ${rowData.Agent_Task}
                     </p>
+                    <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
+                        🔍 Verify File Access
+                    </button>
                 </div>
             </div>
         `;
@@ -861,6 +864,65 @@ function closeAIChat() {
     // Clear input
     const input = document.getElementById('aiChatInput');
     if (input) input.value = '';
+}
+
+async function verifyTranscriptFiles() {
+    if (!currentChatContext.projectId) {
+        alert('No project selected');
+        return;
+    }
+
+    // Show loading message
+    addChatMessage('system', 'Verifying transcript file accessibility...');
+
+    try {
+        const response = await fetch(`${API_BASE}/api/projects/${currentChatContext.projectId}/chat/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filters: currentChatContext.filters,
+                sample_size: 10  // Check first 10 files
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            let message = `**File Access Verification Results:**\n\n`;
+            message += `Total files: ${result.total_files}\n`;
+            message += `Sample checked: ${result.sample_checked}\n`;
+            message += `✅ Accessible: ${result.accessible}\n`;
+            message += `❌ Inaccessible: ${result.inaccessible}\n\n`;
+
+            if (result.sample_results && result.sample_results.length > 0) {
+                message += `**Sample Details:**\n`;
+                result.sample_results.forEach((sample, idx) => {
+                    message += `\n${idx + 1}. ${sample.interaction_id}:\n`;
+                    if (sample.accessible) {
+                        message += `   ✅ Accessible (${sample.turn_count} conversation turns, ${(sample.file_size / 1024).toFixed(1)} KB)\n`;
+                    } else {
+                        message += `   ❌ Not accessible\n`;
+                        message += `   Error: ${sample.error}\n`;
+                        message += `   Path: ${sample.file_path}\n`;
+                    }
+                });
+            }
+
+            if (result.inaccessible > 0) {
+                message += `\n⚠️ **Warning:** Some files are not accessible. Check file paths and server permissions.`;
+            }
+
+            addChatMessage('system', message);
+        } else {
+            addChatMessage('error', `Verification failed: ${result.error}`);
+        }
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        addChatMessage('error', 'Failed to verify files. Check that backend is running.');
+    }
 }
 
 async function sendChatMessage() {
@@ -963,6 +1025,11 @@ function addChatMessage(role, content, metadata = null) {
                 </div>
             `;
         }
+    } else if (role === 'system') {
+        messageHTML += `
+            <div class="ai-chat-message-label">System</div>
+            <div class="ai-chat-message-text">${formatAIResponse(content)}</div>
+        `;
     } else if (role === 'error') {
         messageHTML += `
             <div class="ai-chat-message-label">Error</div>

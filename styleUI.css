@@ -1653,3 +1653,20 @@ code {
 .ai-chat-messages::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Verify button in chat */
+.ai-chat-verify-btn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: var(--ngnx-color-accent-navy-600);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.ai-chat-verify-btn:hover {
+  background-color: var(--ngnx-color-accent-navy-700);
+}

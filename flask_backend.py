@@ -635,74 +635,263 @@ def load_transcript_file(file_path):
 
 def clean_transcript(transcript_data):
     """
-    Clean transcript data by removing unnecessary fields and keeping only relevant information.
-    Customize this based on your actual transcript JSON structure.
+    Clean transcript data by extracting only conversation turns.
 
-    Common fields to keep:
-    - conversation/dialogue
-    - timestamps
-    - speaker labels (agent/customer)
-    - sentiment
-    - key topics/intents
+    Expected JSON structure (array of turn objects):
+    [
+        {
+            "text": "Hello, how can I help you?",
+            "speaker": 0,  // 0 = Agent, 1 = Caller
+            "startOffset": 0.5,
+            "endOffset": 2.3,
+            ... other fields ...
+        },
+        ...
+    ]
+
+    Returns formatted conversation list with only relevant fields.
     """
     if not transcript_data:
         return None
 
-    # This is a flexible cleaner that works with various JSON structures
-    cleaned = {}
+    cleaned_turns = []
 
-    # Common field names to preserve (add more as needed)
-    important_fields = [
-        'transcript', 'conversation', 'dialogue', 'messages', 'turns',
-        'text', 'content', 'utterances',
-        'timestamp', 'time', 'duration',
-        'speaker', 'role', 'participant',
-        'sentiment', 'intent', 'topic', 'category',
-        'summary', 'key_points', 'issues', 'resolution'
-    ]
+    # Handle array of conversation turns
+    if isinstance(transcript_data, list):
+        for turn in transcript_data:
+            if isinstance(turn, dict) and 'text' in turn:
+                cleaned_turn = {
+                    'text': turn.get('text', ''),
+                    'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
+                    'start_time': turn.get('startOffset', 0),
+                    'end_time': turn.get('endOffset', 0)
+                }
+                cleaned_turns.append(cleaned_turn)
+        return cleaned_turns
 
-    # If transcript_data is a dict, filter keys
-    if isinstance(transcript_data, dict):
+    # Handle single dict with nested conversation
+    elif isinstance(transcript_data, dict):
+        # Check if there's a list of turns somewhere in the dict
         for key, value in transcript_data.items():
-            key_lower = key.lower()
-            # Keep field if its name contains any important keyword
-            if any(important in key_lower for important in important_fields):
-                cleaned[key] = value
+            if isinstance(value, list) and len(value) > 0:
+                if isinstance(value[0], dict) and 'text' in value[0]:
+                    # Found the conversation array
+                    for turn in value:
+                        cleaned_turn = {
+                            'text': turn.get('text', ''),
+                            'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
+                            'start_time': turn.get('startOffset', 0),
+                            'end_time': turn.get('endOffset', 0)
+                        }
+                        cleaned_turns.append(cleaned_turn)
+                    return cleaned_turns
 
-    # If it's a list (array of messages/turns), keep as is
-    elif isinstance(transcript_data, list):
-        cleaned = transcript_data
+        # If no conversation array found, return empty
+        return []
 
-    return cleaned if cleaned else transcript_data
+    return cleaned_turns if cleaned_turns else []
+
+
+def format_conversation(turns):
+    """
+    Format a list of conversation turns into readable text.
+
+    Args:
+        turns: List of dicts with 'speaker', 'text', 'start_time', 'end_time'
+
+    Returns:
+        Formatted conversation string
+    """
+    if not turns:
+        return "[Empty conversation]"
+
+    formatted = []
+    for turn in turns:
+        speaker = turn.get('speaker', 'Unknown')
+        text = turn.get('text', '')
+        start_time = turn.get('start_time', 0)
+
+        # Format: [MM:SS] Speaker: Text
+        minutes = int(start_time // 60)
+        seconds = int(start_time % 60)
+        time_str = f"{minutes:02d}:{seconds:02d}"
+
+        formatted.append(f"[{time_str}] {speaker}: {text}")
+
+    return "\n".join(formatted)
 
 
 def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     """
-    Prepare a concise context string for the AI from multiple transcripts.
+    Prepare context string for AI from multiple transcripts.
+    Handles large groups intelligently by sampling.
     """
     if not transcripts:
-        return "No transcript data available."
+        return "No transcript data available.", 0
+
+    total_count = len(transcripts)
+
+    # Smart sampling strategy based on group size
+    if total_count <= 10:
+        # Small group: include all
+        sample_transcripts = transcripts
+        sampling_note = ""
+    elif total_count <= 50:
+        # Medium group: include first 20
+        sample_transcripts = transcripts[:20]
+        sampling_note = f"\n(Showing first 20 of {total_count} total transcripts)"
+    elif total_count <= 200:
+        # Large group: sample every Nth transcript to get ~30 samples
+        step = total_count // 30
+        sample_transcripts = transcripts[::step][:30]
+        sampling_note = f"\n(Showing representative sample of 30 from {total_count} total transcripts)"
+    else:
+        # Very large group: stratified sample of 50
+        # Take samples from beginning, middle, and end
+        step = total_count // 50
+        sample_transcripts = transcripts[::step][:50]
+        sampling_note = f"\n(Showing stratified sample of 50 from {total_count} total transcripts)"
 
     context_parts = [
-        f"You are analyzing a group of customer service transcripts with the following characteristics:",
-        f"- Intent: {intent}",
-        f"- Topic: {topic}",
+        f"You are analyzing customer service transcripts with these characteristics:",
         f"- Category: {category}",
+        f"- Topic: {topic}",
+        f"- Intent: {intent}",
         f"- Agent Task: {agent_task}",
-        f"\nTotal transcripts in this group: {len(transcripts)}\n"
+        f"- Total transcripts: {total_count}",
+        sampling_note,
+        "\n" + "="*60 + "\n"
     ]
 
-    # Add sample or all transcripts depending on count
-    max_transcripts_to_include = 20  # Limit to avoid token limits
+    # Add formatted transcripts
+    for idx, transcript in enumerate(sample_transcripts, 1):
+        context_parts.append(f"\n--- TRANSCRIPT {idx} ---")
 
-    for idx, transcript in enumerate(transcripts[:max_transcripts_to_include]):
-        context_parts.append(f"\n--- Transcript {idx + 1} ---")
-        context_parts.append(json.dumps(transcript, indent=2))
+        if isinstance(transcript, list):
+            # Already cleaned turns
+            context_parts.append(format_conversation(transcript))
+        elif isinstance(transcript, dict) and 'data' in transcript:
+            # Wrapped in data field
+            context_parts.append(format_conversation(transcript['data']))
+        else:
+            # Fallback
+            context_parts.append(json.dumps(transcript, indent=2))
 
-    if len(transcripts) > max_transcripts_to_include:
-        context_parts.append(f"\n... and {len(transcripts) - max_transcripts_to_include} more transcripts")
+        context_parts.append("")  # Empty line between transcripts
 
-    return "\n".join(context_parts)
+    return "\n".join(context_parts), total_count
+
+
+@app.route('/api/projects/<int:project_id>/chat/verify', methods=['POST'])
+def verify_transcript_files(project_id):
+    """
+    Verify if transcript files are accessible from the server.
+    Useful for debugging file path issues.
+
+    Request body:
+    {
+        "filters": {
+            "intent": "Billing Question",
+            "topic": "Payment Issue"
+        },
+        "sample_size": 5  // Optional, defaults to 5
+    }
+
+    Returns:
+    {
+        "success": true,
+        "total_files": 10,
+        "accessible": 7,
+        "inaccessible": 3,
+        "sample_results": [
+            {
+                "interaction_id": "call_001",
+                "file_path": "/path/to/file.json",
+                "accessible": true,
+                "file_size": 12345,
+                "turn_count": 25
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        data = request.get_json()
+        filters = data.get('filters', {})
+        sample_size = data.get('sample_size', 5)
+
+        # Get transcript file paths
+        with TranscriptDatabase(DB_PATH) as local_db:
+            transcript_refs = local_db.get_interaction_ids_by_filter(project_id, filters)
+
+        if not transcript_refs:
+            return jsonify({
+                'success': False,
+                'error': 'No transcripts found matching the specified filters'
+            }), 404
+
+        # Check accessibility
+        total_files = len(transcript_refs)
+        accessible_count = 0
+        inaccessible_count = 0
+        sample_results = []
+
+        # Check a sample
+        for interaction_id, file_path in transcript_refs[:sample_size]:
+            result = {
+                'interaction_id': interaction_id,
+                'file_path': file_path,
+                'accessible': False,
+                'file_size': None,
+                'turn_count': None,
+                'error': None
+            }
+
+            try:
+                if os.path.exists(file_path):
+                    result['accessible'] = True
+                    result['file_size'] = os.path.getsize(file_path)
+
+                    # Try to load and parse
+                    transcript_data = load_transcript_file(file_path)
+                    if transcript_data:
+                        cleaned = clean_transcript(transcript_data)
+                        if cleaned:
+                            result['turn_count'] = len(cleaned)
+                        else:
+                            result['error'] = 'File loaded but no conversation turns found'
+                    else:
+                        result['error'] = 'File exists but could not be parsed as JSON'
+                else:
+                    result['error'] = 'File not found at specified path'
+            except Exception as e:
+                result['error'] = str(e)
+
+            if result['accessible']:
+                accessible_count += 1
+            else:
+                inaccessible_count += 1
+
+            sample_results.append(result)
+
+        return jsonify({
+            'success': True,
+            'total_files': total_files,
+            'sample_checked': len(sample_results),
+            'accessible': accessible_count,
+            'inaccessible': inaccessible_count,
+            'sample_results': sample_results,
+            'note': f'Checked first {len(sample_results)} files. Increase sample_size to check more.'
+        })
+
+    except Exception as e:
+        print(f"Verify error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/projects/<int:project_id>/chat/query', methods=['POST'])
@@ -780,7 +969,7 @@ def chat_query(project_id):
             }), 500
 
         # Prepare context for AI
-        context = prepare_chat_context(
+        context, total_analyzed = prepare_chat_context(
             [t['data'] for t in transcripts],
             filters.get('intent', 'N/A'),
             filters.get('topic', 'N/A'),
@@ -789,14 +978,21 @@ def chat_query(project_id):
         )
 
         # Create prompt for AI
-        full_prompt = f"""You are an AI assistant analyzing customer service transcripts.
+        full_prompt = f"""You are an AI assistant analyzing customer service call transcripts.
 
-Context:
+Each transcript shows a conversation between an Agent and a Caller, with timestamps.
+Format: [MM:SS] Speaker: Text
+
 {context}
 
 User Question: {question}
 
-Please provide a detailed, accurate answer based only on the information in the transcripts above. If the transcripts don't contain enough information to answer the question, say so clearly."""
+Instructions:
+- Provide a detailed, accurate answer based on the transcripts above
+- Reference specific conversations when relevant
+- If asking about patterns or trends, analyze across all transcripts shown
+- If the transcripts don't contain enough information, say so clearly
+- Format your response with clear paragraphs and bullet points where appropriate"""
 
         # Call AWS Bedrock
         try:
@@ -861,7 +1057,8 @@ if __name__ == '__main__':
     print("  GET  /api/projects/<id>/summary")
     print("  POST /api/projects/<id>/report")
     print("  POST /api/projects/<id>/chat/context")
-    print("  POST /api/projects/<id>/chat/query")
+    print("  POST /api/projects/<id>/chat/verify   (NEW - verify file access)")
+    print("  POST /api/projects/<id>/chat/query    (AI Chat)")
     print("  GET  /api/projects/<id>/stats")
     print("="*60)
     
