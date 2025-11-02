@@ -891,6 +891,16 @@ async function verifyTranscriptFiles() {
 
         if (result.success) {
             let message = `**File Access Verification Results:**\n\n`;
+
+            // System info
+            if (result.system_info) {
+                message += `**Server Environment:**\n`;
+                message += `- Platform: ${result.system_info.platform} (${result.system_info.platform_details})\n`;
+                message += `- Python: ${result.system_info.python_version}\n`;
+                message += `- Path mappings configured: ${result.system_info.path_mappings_configured ? 'Yes' : '❌ No'}\n\n`;
+            }
+
+            message += `**File Summary:**\n`;
             message += `Total files: ${result.total_files}\n`;
             message += `Sample checked: ${result.sample_checked}\n`;
             message += `✅ Accessible: ${result.accessible}\n`;
@@ -901,17 +911,40 @@ async function verifyTranscriptFiles() {
                 result.sample_results.forEach((sample, idx) => {
                     message += `\n${idx + 1}. ${sample.interaction_id}:\n`;
                     if (sample.accessible) {
-                        message += `   ✅ Accessible (${sample.turn_count} conversation turns, ${(sample.file_size / 1024).toFixed(1)} KB)\n`;
+                        message += `   ✅ Accessible (${sample.turn_count} turns, ${(sample.file_size / 1024).toFixed(1)} KB)\n`;
                     } else {
                         message += `   ❌ Not accessible\n`;
                         message += `   Error: ${sample.error}\n`;
+                        if (sample.conversion_notes) {
+                            message += `   Notes: ${sample.conversion_notes}\n`;
+                        }
+                        if (sample.suggestion) {
+                            message += `   💡 ${sample.suggestion}\n`;
+                        }
                         message += `   Path: ${sample.file_path}\n`;
                     }
                 });
             }
 
             if (result.inaccessible > 0) {
-                message += `\n⚠️ **Warning:** Some files are not accessible. Check file paths and server permissions.`;
+                message += `\n\n⚠️ **Problem Detected:**\n`;
+
+                if (result.system_info && result.system_info.platform === 'Linux' && !result.system_info.path_mappings_configured) {
+                    message += `Your Flask server is running on Linux, but Windows UNC paths (\\\\\\\\server\\\\share) won't work.\n\n`;
+                    message += `**Solutions:**\n`;
+                    message += `1. **Mount the network share** on your Linux server:\n`;
+                    message += `   \`sudo mount -t cifs //VAOD177APP05/Media /mnt/media -o username=your_user\`\n\n`;
+                    message += `2. **Configure PATH_MAPPINGS** in flask_backend.py:\n`;
+                    message += `   \`PATH_MAPPINGS = {'\\\\\\\\\\\\\\\\VAOD177APP05\\\\\\\\Media': '/mnt/media'}\`\n\n`;
+                    message += `3. **Run Flask on Windows** where UNC paths work natively\n`;
+                } else if (result.system_info && result.system_info.platform === 'Windows') {
+                    message += `Server is on Windows but files still not accessible.\n`;
+                    message += `- Check if you have network permissions\n`;
+                    message += `- Try accessing \\\\\\\\VAOD177APP05\\\\Media from the server\n`;
+                    message += `- Ensure Flask runs with correct user credentials\n`;
+                }
+            } else {
+                message += `\n✅ **All sampled files are accessible!** You can now use the AI chat.`;
             }
 
             addChatMessage('system', message);

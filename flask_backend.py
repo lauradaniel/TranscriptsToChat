@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 import json
+import sys
+import platform
 from pathlib import Path
 from datetime import datetime
 from database import TranscriptDatabase
@@ -615,18 +617,91 @@ def internal_error(error):
 
 # === HELPER FUNCTIONS FOR AI CHAT ===
 
+# Path conversion configuration - UPDATE THESE based on your setup
+PATH_MAPPINGS = {
+    # Format: 'UNC_prefix': 'local_mount_path'
+    # Example: '\\\\VAOD177APP05\\Media': '/mnt/media'
+    # Add your mappings here:
+}
+
+def convert_unc_to_local_path(unc_path):
+    """
+    Convert Windows UNC path to local mounted path.
+
+    Examples:
+    - Windows: \\VAOD177APP05\Media\file.json -> \\VAOD177APP05\Media\file.json (no change)
+    - Linux with mount: \\VAOD177APP05\Media\file.json -> /mnt/media/file.json
+
+    Returns: (converted_path, conversion_notes)
+    """
+    if not unc_path:
+        return unc_path, "Empty path"
+
+    original_path = unc_path
+    notes = []
+
+    # Remove quotes if present
+    if unc_path.startswith('"') and unc_path.endswith('"'):
+        unc_path = unc_path[1:-1]
+        notes.append("Removed surrounding quotes")
+
+    # Check if running on Windows
+    is_windows = platform.system() == 'Windows'
+
+    if is_windows:
+        # On Windows, UNC paths should work directly
+        # Just normalize the path
+        unc_path = unc_path.replace('/', '\\')
+        notes.append(f"Running on Windows - using UNC path directly")
+        return unc_path, "; ".join(notes) if notes else "Windows UNC path"
+
+    # On Linux/Mac, need to convert UNC to mounted path
+    notes.append(f"Running on {platform.system()}")
+
+    # Check if path mappings are configured
+    if not PATH_MAPPINGS:
+        notes.append("⚠️ No PATH_MAPPINGS configured - UNC paths won't work on Linux")
+        return unc_path, "; ".join(notes)
+
+    # Try to convert using configured mappings
+    for unc_prefix, local_mount in PATH_MAPPINGS.items():
+        # Normalize the UNC prefix
+        unc_prefix_normalized = unc_prefix.replace('/', '\\').upper()
+        unc_path_normalized = unc_path.replace('/', '\\').upper()
+
+        if unc_path_normalized.startswith(unc_prefix_normalized):
+            # Replace UNC prefix with local mount
+            relative_path = unc_path[len(unc_prefix):]
+            relative_path = relative_path.replace('\\', '/')
+            if relative_path.startswith('/'):
+                relative_path = relative_path[1:]
+
+            converted_path = os.path.join(local_mount, relative_path)
+            notes.append(f"Converted UNC to local mount: {unc_prefix} -> {local_mount}")
+            return converted_path, "; ".join(notes)
+
+    notes.append(f"⚠️ No matching PATH_MAPPING found for {unc_path[:50]}...")
+    return unc_path, "; ".join(notes)
+
+
 def load_transcript_file(file_path):
     """
     Load a transcript JSON file from the network path.
+    Handles both Windows UNC paths and local paths.
     Returns the parsed JSON data or None if file cannot be loaded.
     """
     try:
-        # Handle different path formats (Windows UNC, Linux paths, etc.)
-        if not os.path.exists(file_path):
-            print(f"Warning: Transcript file not found: {file_path}")
+        # Convert path if needed
+        converted_path, conversion_notes = convert_unc_to_local_path(file_path)
+
+        # Try to access the file
+        if not os.path.exists(converted_path):
+            print(f"Warning: Transcript file not found: {converted_path}")
+            print(f"  Original path: {file_path}")
+            print(f"  Conversion notes: {conversion_notes}")
             return None
 
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(converted_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         print(f"Error loading transcript {file_path}: {str(e)}")
@@ -838,9 +913,14 @@ def verify_transcript_files(project_id):
 
         # Check a sample
         for interaction_id, file_path in transcript_refs[:sample_size]:
+            # Convert path
+            converted_path, conversion_notes = convert_unc_to_local_path(file_path)
+
             result = {
                 'interaction_id': interaction_id,
                 'file_path': file_path,
+                'converted_path': converted_path if converted_path != file_path else None,
+                'conversion_notes': conversion_notes,
                 'accessible': False,
                 'file_size': None,
                 'turn_count': None,
@@ -848,9 +928,9 @@ def verify_transcript_files(project_id):
             }
 
             try:
-                if os.path.exists(file_path):
+                if os.path.exists(converted_path):
                     result['accessible'] = True
-                    result['file_size'] = os.path.getsize(file_path)
+                    result['file_size'] = os.path.getsize(converted_path)
 
                     # Try to load and parse
                     transcript_data = load_transcript_file(file_path)
@@ -863,7 +943,8 @@ def verify_transcript_files(project_id):
                     else:
                         result['error'] = 'File exists but could not be parsed as JSON'
                 else:
-                    result['error'] = 'File not found at specified path'
+                    result['error'] = f'File not found at path: {converted_path}'
+                    result['suggestion'] = 'Check if network share is mounted or configure PATH_MAPPINGS in flask_backend.py'
             except Exception as e:
                 result['error'] = str(e)
 
@@ -874,6 +955,15 @@ def verify_transcript_files(project_id):
 
             sample_results.append(result)
 
+        # System diagnostics
+        system_info = {
+            'platform': platform.system(),
+            'platform_details': platform.platform(),
+            'python_version': sys.version.split()[0],
+            'path_mappings_configured': len(PATH_MAPPINGS) > 0,
+            'path_mappings': PATH_MAPPINGS if PATH_MAPPINGS else None
+        }
+
         return jsonify({
             'success': True,
             'total_files': total_files,
@@ -881,7 +971,9 @@ def verify_transcript_files(project_id):
             'accessible': accessible_count,
             'inaccessible': inaccessible_count,
             'sample_results': sample_results,
-            'note': f'Checked first {len(sample_results)} files. Increase sample_size to check more.'
+            'system_info': system_info,
+            'note': f'Checked first {len(sample_results)} files. Increase sample_size to check more.',
+            'help': 'If files are not accessible on Linux, configure PATH_MAPPINGS in flask_backend.py to map UNC paths to local mounts.'
         })
 
     except Exception as e:
