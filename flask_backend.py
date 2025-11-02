@@ -6,11 +6,13 @@ Integrates with the existing HTML/JS frontend
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
+import json
 from pathlib import Path
 from datetime import datetime
 from database import TranscriptDatabase
 from csv_processor import CSVProcessor
 from main_integration import create_project_from_csv
+from bedrock import BedrockClient
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
@@ -611,6 +613,236 @@ def internal_error(error):
     }), 500
 
 
+# === HELPER FUNCTIONS FOR AI CHAT ===
+
+def load_transcript_file(file_path):
+    """
+    Load a transcript JSON file from the network path.
+    Returns the parsed JSON data or None if file cannot be loaded.
+    """
+    try:
+        # Handle different path formats (Windows UNC, Linux paths, etc.)
+        if not os.path.exists(file_path):
+            print(f"Warning: Transcript file not found: {file_path}")
+            return None
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading transcript {file_path}: {str(e)}")
+        return None
+
+
+def clean_transcript(transcript_data):
+    """
+    Clean transcript data by removing unnecessary fields and keeping only relevant information.
+    Customize this based on your actual transcript JSON structure.
+
+    Common fields to keep:
+    - conversation/dialogue
+    - timestamps
+    - speaker labels (agent/customer)
+    - sentiment
+    - key topics/intents
+    """
+    if not transcript_data:
+        return None
+
+    # This is a flexible cleaner that works with various JSON structures
+    cleaned = {}
+
+    # Common field names to preserve (add more as needed)
+    important_fields = [
+        'transcript', 'conversation', 'dialogue', 'messages', 'turns',
+        'text', 'content', 'utterances',
+        'timestamp', 'time', 'duration',
+        'speaker', 'role', 'participant',
+        'sentiment', 'intent', 'topic', 'category',
+        'summary', 'key_points', 'issues', 'resolution'
+    ]
+
+    # If transcript_data is a dict, filter keys
+    if isinstance(transcript_data, dict):
+        for key, value in transcript_data.items():
+            key_lower = key.lower()
+            # Keep field if its name contains any important keyword
+            if any(important in key_lower for important in important_fields):
+                cleaned[key] = value
+
+    # If it's a list (array of messages/turns), keep as is
+    elif isinstance(transcript_data, list):
+        cleaned = transcript_data
+
+    return cleaned if cleaned else transcript_data
+
+
+def prepare_chat_context(transcripts, intent, topic, category, agent_task):
+    """
+    Prepare a concise context string for the AI from multiple transcripts.
+    """
+    if not transcripts:
+        return "No transcript data available."
+
+    context_parts = [
+        f"You are analyzing a group of customer service transcripts with the following characteristics:",
+        f"- Intent: {intent}",
+        f"- Topic: {topic}",
+        f"- Category: {category}",
+        f"- Agent Task: {agent_task}",
+        f"\nTotal transcripts in this group: {len(transcripts)}\n"
+    ]
+
+    # Add sample or all transcripts depending on count
+    max_transcripts_to_include = 20  # Limit to avoid token limits
+
+    for idx, transcript in enumerate(transcripts[:max_transcripts_to_include]):
+        context_parts.append(f"\n--- Transcript {idx + 1} ---")
+        context_parts.append(json.dumps(transcript, indent=2))
+
+    if len(transcripts) > max_transcripts_to_include:
+        context_parts.append(f"\n... and {len(transcripts) - max_transcripts_to_include} more transcripts")
+
+    return "\n".join(context_parts)
+
+
+@app.route('/api/projects/<int:project_id>/chat/query', methods=['POST'])
+def chat_query(project_id):
+    """
+    AI Chat endpoint - answers questions about a specific group of transcripts
+
+    Request body:
+    {
+        "filters": {
+            "intent": "Billing Question",
+            "topic": "Payment Issue",
+            "category": "Finance",
+            "agent_task": "Process Refund"
+        },
+        "question": "What are the common issues in these calls?"
+    }
+
+    Returns:
+    {
+        "success": true,
+        "answer": "Based on the transcripts...",
+        "transcript_count": 5,
+        "tokens_used": {"input": 1500, "output": 300}
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Request body is required'
+            }), 400
+
+        filters = data.get('filters', {})
+        question = data.get('question', '')
+
+        if not question:
+            return jsonify({
+                'success': False,
+                'error': 'Question is required'
+            }), 400
+
+        # Get transcript file paths from database
+        with TranscriptDatabase(DB_PATH) as local_db:
+            transcript_refs = local_db.get_interaction_ids_by_filter(project_id, filters)
+
+        if not transcript_refs:
+            return jsonify({
+                'success': False,
+                'error': 'No transcripts found matching the specified filters'
+            }), 404
+
+        # Load and clean transcripts
+        transcripts = []
+        failed_loads = 0
+
+        for interaction_id, file_path in transcript_refs:
+            transcript_data = load_transcript_file(file_path)
+            if transcript_data:
+                cleaned = clean_transcript(transcript_data)
+                if cleaned:
+                    transcripts.append({
+                        'interaction_id': interaction_id,
+                        'data': cleaned
+                    })
+            else:
+                failed_loads += 1
+
+        if not transcripts:
+            return jsonify({
+                'success': False,
+                'error': f'Could not load any transcript files. {failed_loads} files failed to load. Check file paths and permissions.'
+            }), 500
+
+        # Prepare context for AI
+        context = prepare_chat_context(
+            [t['data'] for t in transcripts],
+            filters.get('intent', 'N/A'),
+            filters.get('topic', 'N/A'),
+            filters.get('category', 'N/A'),
+            filters.get('agent_task', 'N/A')
+        )
+
+        # Create prompt for AI
+        full_prompt = f"""You are an AI assistant analyzing customer service transcripts.
+
+Context:
+{context}
+
+User Question: {question}
+
+Please provide a detailed, accurate answer based only on the information in the transcripts above. If the transcripts don't contain enough information to answer the question, say so clearly."""
+
+        # Call AWS Bedrock
+        try:
+            bedrock = BedrockClient(region_name="us-east-1")
+            model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+
+            # Limit prompt size to avoid token limits
+            max_prompt_chars = 100000  # ~25k tokens
+            if len(full_prompt) > max_prompt_chars:
+                full_prompt = full_prompt[:max_prompt_chars] + "\n\n[Context truncated due to length...]"
+
+            answer, input_tokens, output_tokens = bedrock.simple_prompt(
+                prompt=full_prompt,
+                model_id=model_id,
+                max_tokens=2000
+            )
+
+            return jsonify({
+                'success': True,
+                'answer': answer,
+                'transcript_count': len(transcripts),
+                'failed_loads': failed_loads,
+                'tokens_used': {
+                    'input': input_tokens,
+                    'output': output_tokens
+                }
+            })
+
+        except Exception as bedrock_error:
+            print(f"Bedrock error: {str(bedrock_error)}")
+            return jsonify({
+                'success': False,
+                'error': f'AI service error: {str(bedrock_error)}',
+                'transcript_count': len(transcripts)
+            }), 500
+
+    except Exception as e:
+        print(f"Chat query error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     print("="*60)
     print("TRANSCRIPT ANALYSIS - FLASK BACKEND")
@@ -629,6 +861,7 @@ if __name__ == '__main__':
     print("  GET  /api/projects/<id>/summary")
     print("  POST /api/projects/<id>/report")
     print("  POST /api/projects/<id>/chat/context")
+    print("  POST /api/projects/<id>/chat/query")
     print("  GET  /api/projects/<id>/stats")
     print("="*60)
     

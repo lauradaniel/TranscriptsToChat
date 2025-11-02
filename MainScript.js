@@ -768,12 +768,255 @@ function attachChatTableDragDropHandlers() {
  * Handler for AI Chat icon click
  * Opens AI chat interface for the selected intent/topic
  */
+
+// Global state for current chat session
+let currentChatContext = {
+    projectId: null,
+    filters: {},
+    conversationHistory: []
+};
+
 function openAIChat(intent, topic) {
     console.log('Opening AI Chat for:', { intent, topic });
-    // TODO: Implement AI chat functionality
-    // For now, just show an alert
-    alert(`AI Chat feature coming soon!\n\nIntent: ${intent}\nTopic: ${topic}`);
+
+    // Get the selected project ID from the dropdown
+    const projectIdInput = document.getElementById('chatProjectSearch');
+    const projectId = projectIdInput ? projectIdInput.getAttribute('data-selected-id') : null;
+
+    if (!projectId) {
+        alert('Please select a project first');
+        return;
+    }
+
+    // Get the full row data to extract Category and Agent_Task
+    const rows = currentChatData.filter(row =>
+        row.Intent === intent && row.Topic === topic
+    );
+
+    if (rows.length === 0) {
+        alert('Could not find matching data');
+        return;
+    }
+
+    const rowData = rows[0];
+
+    // Store chat context
+    currentChatContext = {
+        projectId: projectId,
+        filters: {
+            intent: rowData.Intent,
+            topic: rowData.Topic,
+            category: rowData.Category,
+            agent_task: rowData.Agent_Task
+        },
+        conversationHistory: []
+    };
+
+    // Update subtitle with context info
+    const subtitle = document.getElementById('aiChatSubtitle');
+    if (subtitle) {
+        subtitle.textContent = `${rowData.Category} > ${rowData.Topic} > ${rowData.Intent} (${rowData.Volume} transcripts)`;
+    }
+
+    // Clear previous messages
+    const messagesContainer = document.getElementById('aiChatMessages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = `
+            <div class="ai-chat-message ai-chat-message-system">
+                <div class="ai-chat-message-content">
+                    <p><strong>Chat session started</strong></p>
+                    <p>Ask questions about the ${rowData.Volume} transcripts in this group.</p>
+                    <p class="ai-chat-context-info">
+                        Category: ${rowData.Category}<br>
+                        Topic: ${rowData.Topic}<br>
+                        Intent: ${rowData.Intent}<br>
+                        Agent Task: ${rowData.Agent_Task}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    // Show modal
+    const modal = document.getElementById('aiChatModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+
+        // Focus on input
+        setTimeout(() => {
+            const input = document.getElementById('aiChatInput');
+            if (input) input.focus();
+        }, 100);
+    }
 }
+
+function closeAIChat() {
+    const modal = document.getElementById('aiChatModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    // Clear input
+    const input = document.getElementById('aiChatInput');
+    if (input) input.value = '';
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('aiChatInput');
+    const sendBtn = document.getElementById('aiChatSendBtn');
+    const messagesContainer = document.getElementById('aiChatMessages');
+
+    if (!input || !messagesContainer) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Disable input while processing
+    input.disabled = true;
+    sendBtn.disabled = true;
+    const originalBtnContent = sendBtn.innerHTML;
+    sendBtn.innerHTML = '<span style="font-size: 12px;">...</span>';
+
+    // Add user message to UI
+    addChatMessage('user', question);
+
+    // Clear input
+    input.value = '';
+
+    // Store in conversation history
+    currentChatContext.conversationHistory.push({
+        role: 'user',
+        content: question
+    });
+
+    try {
+        // Call backend API
+        const response = await fetch(`${API_BASE}/api/projects/${currentChatContext.projectId}/chat/query`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filters: currentChatContext.filters,
+                question: question
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Add AI response to UI
+            addChatMessage('assistant', result.answer, {
+                transcriptCount: result.transcript_count,
+                tokensUsed: result.tokens_used
+            });
+
+            // Store in conversation history
+            currentChatContext.conversationHistory.push({
+                role: 'assistant',
+                content: result.answer
+            });
+        } else {
+            // Show error message
+            addChatMessage('error', `Error: ${result.error}`);
+        }
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        addChatMessage('error', 'Failed to connect to AI service. Please check that the backend is running and AWS credentials are configured.');
+    } finally {
+        // Re-enable input
+        input.disabled = false;
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = originalBtnContent;
+        input.focus();
+    }
+}
+
+function addChatMessage(role, content, metadata = null) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    if (!messagesContainer) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-chat-message ai-chat-message-${role}`;
+
+    let messageHTML = `<div class="ai-chat-message-content">`;
+
+    if (role === 'user') {
+        messageHTML += `
+            <div class="ai-chat-message-label">You</div>
+            <p>${escapeHtml(content)}</p>
+        `;
+    } else if (role === 'assistant') {
+        messageHTML += `
+            <div class="ai-chat-message-label">AI Assistant</div>
+            <div class="ai-chat-message-text">${formatAIResponse(content)}</div>
+        `;
+
+        if (metadata) {
+            messageHTML += `
+                <div class="ai-chat-metadata">
+                    <small>Analyzed ${metadata.transcriptCount} transcripts |
+                    Tokens: ${metadata.tokensUsed.input} in, ${metadata.tokensUsed.output} out</small>
+                </div>
+            `;
+        }
+    } else if (role === 'error') {
+        messageHTML += `
+            <div class="ai-chat-message-label">Error</div>
+            <p style="color: #d32f2f;">${escapeHtml(content)}</p>
+        `;
+    }
+
+    messageHTML += `</div>`;
+    messageDiv.innerHTML = messageHTML;
+
+    messagesContainer.appendChild(messageDiv);
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatAIResponse(text) {
+    // Simple markdown-like formatting
+    // Convert newlines to <br>
+    let formatted = escapeHtml(text);
+
+    // Bold text: **text** -> <strong>text</strong>
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert newlines to paragraphs
+    formatted = formatted.split('\n\n').map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`).join('');
+
+    return formatted;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Handle Enter key in chat input (Shift+Enter for new line, Enter to send)
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('aiChatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
+});
 
 
 /* === 5. INITIALIZATION BLOCK === */
