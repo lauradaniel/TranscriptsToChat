@@ -712,57 +712,87 @@ def clean_transcript(transcript_data):
     """
     Clean transcript data by extracting only conversation turns.
 
-    Expected JSON structure (array of turn objects):
-    [
-        {
-            "text": "Hello, how can I help you?",
-            "speaker": 0,  // 0 = Agent, 1 = Caller
-            "startOffset": 0.5,
-            "endOffset": 2.3,
-            ... other fields ...
-        },
-        ...
-    ]
+    Expected JSON structure:
+    {
+        "topics": [  // The conversation array
+            {
+                "text": "Hello, how can I help you?",
+                "speaker": 0,  // 0 = Agent, 1 = Caller
+                "startOffset": 1657,
+                "endOffset": 6468,
+                // May have extra fields we need to remove:
+                "category": "...",  // Remove - duplicate of CSV metadata
+                "topic": "...",     // Remove - duplicate
+                "subTopic": "...",  // Remove - duplicate
+                "callDriver": true, // Remove - ML metadata
+                "snippet": "...",   // Remove - ML metadata
+                "score": 1.0,       // Remove - ML metadata
+                "altTopics": [...]  // Remove - alternative classifications
+            }
+        ],
+        "namedEntities": [...],  // Remove - PII data
+        "transcriptFile": "...", // Remove - file metadata
+        "version": "1.2",        // Remove - version info
+        "primaryTopic": {...}    // Remove - duplicate of CSV
+    }
 
-    Returns formatted conversation list with only relevant fields.
+    Returns: List of cleaned turns with ONLY text, speaker, start_time, end_time
     """
     if not transcript_data:
         return None
 
     cleaned_turns = []
 
-    # Handle array of conversation turns
-    if isinstance(transcript_data, list):
-        for turn in transcript_data:
-            if isinstance(turn, dict) and 'text' in turn:
-                cleaned_turn = {
-                    'text': turn.get('text', ''),
-                    'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
-                    'start_time': turn.get('startOffset', 0),
-                    'end_time': turn.get('endOffset', 0)
-                }
-                cleaned_turns.append(cleaned_turn)
-        return cleaned_turns
+    # Handle dict structure with "topics" key (EnlightenXO format)
+    if isinstance(transcript_data, dict):
+        # First check for "topics" key specifically
+        if 'topics' in transcript_data and isinstance(transcript_data['topics'], list):
+            for turn in transcript_data['topics']:
+                if isinstance(turn, dict) and 'text' in turn:
+                    # Extract ONLY the 4 essential fields, discard everything else
+                    cleaned_turn = {
+                        'text': turn.get('text', '').strip(),
+                        'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
+                        'start_time': turn.get('startOffset', 0),
+                        'end_time': turn.get('endOffset', 0)
+                    }
+                    # Only add non-empty text
+                    if cleaned_turn['text']:
+                        cleaned_turns.append(cleaned_turn)
+            return cleaned_turns
 
-    # Handle single dict with nested conversation
-    elif isinstance(transcript_data, dict):
-        # Check if there's a list of turns somewhere in the dict
+        # Fallback: search for any key with a list of turns
         for key, value in transcript_data.items():
             if isinstance(value, list) and len(value) > 0:
                 if isinstance(value[0], dict) and 'text' in value[0]:
-                    # Found the conversation array
+                    # Found a conversation array
                     for turn in value:
                         cleaned_turn = {
-                            'text': turn.get('text', ''),
+                            'text': turn.get('text', '').strip(),
                             'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
                             'start_time': turn.get('startOffset', 0),
                             'end_time': turn.get('endOffset', 0)
                         }
-                        cleaned_turns.append(cleaned_turn)
+                        if cleaned_turn['text']:
+                            cleaned_turns.append(cleaned_turn)
                     return cleaned_turns
 
-        # If no conversation array found, return empty
+        # If no conversation array found
         return []
+
+    # Handle array of conversation turns directly (less common)
+    elif isinstance(transcript_data, list):
+        for turn in transcript_data:
+            if isinstance(turn, dict) and 'text' in turn:
+                cleaned_turn = {
+                    'text': turn.get('text', '').strip(),
+                    'speaker': 'Agent' if turn.get('speaker') == 0 else 'Caller',
+                    'start_time': turn.get('startOffset', 0),
+                    'end_time': turn.get('endOffset', 0)
+                }
+                if cleaned_turn['text']:
+                    cleaned_turns.append(cleaned_turn)
+        return cleaned_turns
 
     return cleaned_turns if cleaned_turns else []
 
