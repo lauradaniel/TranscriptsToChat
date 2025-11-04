@@ -884,7 +884,7 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
 
         context_parts.append("")  # Empty line between transcripts
 
-    return "\n".join(context_parts), total_count
+    return "\n".join(context_parts), len(sample_transcripts)
 
 
 @app.route('/api/projects/<int:project_id>/chat/verify', methods=['POST'])
