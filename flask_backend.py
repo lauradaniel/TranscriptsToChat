@@ -1062,6 +1062,13 @@ def chat_query(project_id):
         with TranscriptDatabase(DB_PATH) as local_db:
             transcript_refs = local_db.get_interaction_ids_by_filter(project_id, filters)
 
+        print(f"\n{'='*60}")
+        print(f"🔍 CHAT QUERY DEBUG - Project {project_id}")
+        print(f"{'='*60}")
+        print(f"Question: {question[:100]}...")
+        print(f"Filters: {filters}")
+        print(f"Total transcript files found in DB: {len(transcript_refs)}")
+
         if not transcript_refs:
             return jsonify({
                 'success': False,
@@ -1071,18 +1078,33 @@ def chat_query(project_id):
         # Load and clean transcripts
         transcripts = []
         failed_loads = 0
+        total_turns = 0
 
-        for interaction_id, file_path in transcript_refs:
+        for idx, (interaction_id, file_path) in enumerate(transcript_refs):
             transcript_data = load_transcript_file(file_path)
             if transcript_data:
                 cleaned = clean_transcript(transcript_data)
                 if cleaned:
+                    turn_count = len(cleaned)
+                    total_turns += turn_count
                     transcripts.append({
                         'interaction_id': interaction_id,
                         'data': cleaned
                     })
+                    if idx < 3:  # Log first 3 for debugging
+                        print(f"  ✅ Loaded transcript {interaction_id}: {turn_count} conversation turns")
+                else:
+                    print(f"  ⚠️ Transcript {interaction_id}: Loaded but no turns after cleaning")
+                    failed_loads += 1
             else:
+                print(f"  ❌ Failed to load transcript {interaction_id}")
                 failed_loads += 1
+
+        print(f"\n📊 Loading Summary:")
+        print(f"  Successfully loaded: {len(transcripts)} transcripts")
+        print(f"  Failed to load: {failed_loads} transcripts")
+        print(f"  Total conversation turns: {total_turns}")
+        print(f"  Average turns per transcript: {total_turns / len(transcripts) if transcripts else 0:.1f}")
 
         if not transcripts:
             return jsonify({
@@ -1098,6 +1120,10 @@ def chat_query(project_id):
             filters.get('category', 'N/A'),
             filters.get('agent_task', 'N/A')
         )
+
+        print(f"\n📝 Context Preparation:")
+        print(f"  Transcripts sampled for AI: {total_analyzed} (from {len(transcripts)} total)")
+        print(f"  Context size: {len(context):,} characters (~{len(context)//4:,} tokens)")
 
         # Create prompt for AI
         full_prompt = f"""You are an AI assistant analyzing customer service call transcripts.
@@ -1116,6 +1142,8 @@ Instructions:
 - If the transcripts don't contain enough information, say so clearly
 - Format your response with clear paragraphs and bullet points where appropriate"""
 
+        print(f"  Full prompt size: {len(full_prompt):,} characters (~{len(full_prompt)//4:,} tokens)")
+
         # Call AWS Bedrock
         try:
             bedrock = BedrockClient(region_name="us-east-1")
@@ -1123,14 +1151,27 @@ Instructions:
 
             # Limit prompt size to avoid token limits
             max_prompt_chars = 100000  # ~25k tokens
+            was_truncated = False
             if len(full_prompt) > max_prompt_chars:
                 full_prompt = full_prompt[:max_prompt_chars] + "\n\n[Context truncated due to length...]"
+                was_truncated = True
+                print(f"  ⚠️ Prompt truncated from {len(full_prompt):,} to {max_prompt_chars:,} characters")
+
+            print(f"\n🚀 Sending to Bedrock (model: {model_id})...")
+            print(f"  Max output tokens: 2000")
 
             answer, input_tokens, output_tokens = bedrock.simple_prompt(
                 prompt=full_prompt,
                 model_id=model_id,
                 max_tokens=2000
             )
+
+            print(f"\n✅ Bedrock Response Received:")
+            print(f"  Input tokens: {input_tokens:,}")
+            print(f"  Output tokens: {output_tokens:,}")
+            print(f"  Answer length: {len(answer)} characters")
+            print(f"  Answer preview: {answer[:150]}...")
+            print(f"{'='*60}\n")
 
             return jsonify({
                 'success': True,
@@ -1144,7 +1185,26 @@ Instructions:
             })
 
         except Exception as bedrock_error:
-            print(f"Bedrock error: {str(bedrock_error)}")
+            error_msg = str(bedrock_error)
+            print(f"\n❌ BEDROCK ERROR:")
+            print(f"  Error type: {type(bedrock_error).__name__}")
+            print(f"  Error message: {error_msg}")
+
+            # Check for common errors
+            if "ServiceUnavailableException" in error_msg:
+                print(f"  ⚠️ Bedrock service unavailable - likely rate limiting or service issues")
+                print(f"  💡 Try again in a few seconds")
+            elif "ThrottlingException" in error_msg:
+                print(f"  ⚠️ Rate limit exceeded")
+                print(f"  💡 Wait 60 seconds before retry")
+            elif "ValidationException" in error_msg or "token" in error_msg.lower():
+                print(f"  ⚠️ Possible token limit exceeded")
+                print(f"  💡 Prompt was {len(full_prompt):,} chars (~{len(full_prompt)//4:,} tokens)")
+
+            import traceback
+            traceback.print_exc()
+            print(f"{'='*60}\n")
+
             return jsonify({
                 'success': False,
                 'error': f'AI service error: {str(bedrock_error)}',
