@@ -845,26 +845,26 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     total_count = len(transcripts)
 
     # Smart sampling strategy based on group size
-    # ADJUSTED: Reduced sample sizes to prevent truncation with long transcripts
+    # OPTIMIZED: Balanced sample sizes to maximize coverage while staying under 100k char limit
     if total_count <= 10:
         # Small group: include all
         sample_transcripts = transcripts
         sampling_note = ""
     elif total_count <= 50:
-        # Medium group: include first 12 (reduced from 20)
-        sample_transcripts = transcripts[:12]
-        sampling_note = f"\n(Showing first 12 of {total_count} total transcripts)"
+        # Medium group: include first 18
+        sample_transcripts = transcripts[:18]
+        sampling_note = f"\n(Showing first 18 of {total_count} total transcripts)"
     elif total_count <= 200:
-        # Large group: sample every Nth transcript to get ~12 samples (reduced from 30)
-        step = total_count // 12
-        sample_transcripts = transcripts[::step][:12]
-        sampling_note = f"\n(Showing representative sample of 12 from {total_count} total transcripts)"
+        # Large group: sample every Nth transcript to get ~20 samples
+        step = total_count // 20
+        sample_transcripts = transcripts[::step][:20]
+        sampling_note = f"\n(Showing representative sample of 20 from {total_count} total transcripts)"
     else:
-        # Very large group: stratified sample of 15 (reduced from 50)
+        # Very large group: stratified sample of 25
         # Take samples from beginning, middle, and end
-        step = total_count // 15
-        sample_transcripts = transcripts[::step][:15]
-        sampling_note = f"\n(Showing stratified sample of 15 from {total_count} total transcripts)"
+        step = total_count // 25
+        sample_transcripts = transcripts[::step][:25]
+        sampling_note = f"\n(Showing stratified sample of 25 from {total_count} total transcripts)"
 
     context_parts = [
         f"You are analyzing customer service transcripts with these characteristics:",
@@ -878,8 +878,8 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     ]
 
     # Add formatted transcripts with per-transcript length limit
-    # Limit each transcript to 60 turns to ensure all sampled transcripts fit within token limits
-    MAX_TURNS_PER_TRANSCRIPT = 60
+    # Limit each transcript to 100 turns to ensure all sampled transcripts fit within token limits
+    MAX_TURNS_PER_TRANSCRIPT = 100
 
     for idx, transcript in enumerate(sample_transcripts, 1):
         context_parts.append(f"\n--- TRANSCRIPT {idx} ---")
