@@ -797,12 +797,13 @@ def clean_transcript(transcript_data):
     return cleaned_turns if cleaned_turns else []
 
 
-def format_conversation(turns):
+def format_conversation(turns, max_turns=None):
     """
     Format a list of conversation turns into readable text.
 
     Args:
         turns: List of dicts with 'speaker', 'text', 'start_time', 'end_time'
+        max_turns: Optional limit on number of turns to include (for very long conversations)
 
     Returns:
         Formatted conversation string
@@ -810,8 +811,12 @@ def format_conversation(turns):
     if not turns:
         return "[Empty conversation]"
 
+    # Truncate if needed to stay within token limits
+    turns_to_format = turns[:max_turns] if max_turns else turns
+    was_truncated = max_turns and len(turns) > max_turns
+
     formatted = []
-    for turn in turns:
+    for turn in turns_to_format:
         speaker = turn.get('speaker', 'Unknown')
         text = turn.get('text', '')
         start_time = turn.get('start_time', 0)
@@ -822,6 +827,9 @@ def format_conversation(turns):
         time_str = f"{minutes:02d}:{seconds:02d}"
 
         formatted.append(f"[{time_str}] {speaker}: {text}")
+
+    if was_truncated:
+        formatted.append(f"\n[... {len(turns) - max_turns} more conversation turns omitted for brevity ...]")
 
     return "\n".join(formatted)
 
@@ -837,25 +845,26 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     total_count = len(transcripts)
 
     # Smart sampling strategy based on group size
+    # ADJUSTED: Reduced sample sizes to prevent truncation with long transcripts
     if total_count <= 10:
         # Small group: include all
         sample_transcripts = transcripts
         sampling_note = ""
     elif total_count <= 50:
-        # Medium group: include first 20
-        sample_transcripts = transcripts[:20]
-        sampling_note = f"\n(Showing first 20 of {total_count} total transcripts)"
+        # Medium group: include first 12 (reduced from 20)
+        sample_transcripts = transcripts[:12]
+        sampling_note = f"\n(Showing first 12 of {total_count} total transcripts)"
     elif total_count <= 200:
-        # Large group: sample every Nth transcript to get ~30 samples
-        step = total_count // 30
-        sample_transcripts = transcripts[::step][:30]
-        sampling_note = f"\n(Showing representative sample of 30 from {total_count} total transcripts)"
+        # Large group: sample every Nth transcript to get ~12 samples (reduced from 30)
+        step = total_count // 12
+        sample_transcripts = transcripts[::step][:12]
+        sampling_note = f"\n(Showing representative sample of 12 from {total_count} total transcripts)"
     else:
-        # Very large group: stratified sample of 50
+        # Very large group: stratified sample of 15 (reduced from 50)
         # Take samples from beginning, middle, and end
-        step = total_count // 50
-        sample_transcripts = transcripts[::step][:50]
-        sampling_note = f"\n(Showing stratified sample of 50 from {total_count} total transcripts)"
+        step = total_count // 15
+        sample_transcripts = transcripts[::step][:15]
+        sampling_note = f"\n(Showing stratified sample of 15 from {total_count} total transcripts)"
 
     context_parts = [
         f"You are analyzing customer service transcripts with these characteristics:",
@@ -868,16 +877,19 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
         "\n" + "="*60 + "\n"
     ]
 
-    # Add formatted transcripts
+    # Add formatted transcripts with per-transcript length limit
+    # Limit each transcript to 60 turns to ensure all sampled transcripts fit within token limits
+    MAX_TURNS_PER_TRANSCRIPT = 60
+
     for idx, transcript in enumerate(sample_transcripts, 1):
         context_parts.append(f"\n--- TRANSCRIPT {idx} ---")
 
         if isinstance(transcript, list):
             # Already cleaned turns
-            context_parts.append(format_conversation(transcript))
+            context_parts.append(format_conversation(transcript, max_turns=MAX_TURNS_PER_TRANSCRIPT))
         elif isinstance(transcript, dict) and 'data' in transcript:
             # Wrapped in data field
-            context_parts.append(format_conversation(transcript['data']))
+            context_parts.append(format_conversation(transcript['data'], max_turns=MAX_TURNS_PER_TRANSCRIPT))
         else:
             # Fallback
             context_parts.append(json.dumps(transcript, indent=2))
