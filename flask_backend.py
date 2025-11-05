@@ -1305,7 +1305,7 @@ def chat_query(project_id):
         print(f"\n📝 Context Preparation Complete:")
         print(f"  Transcripts sampled for AI: {sampled_count} (from {total_count} total)")
 
-        # Create prompt for AI - SIMPLIFIED matching working implementation
+        # Create system prompt with context - matches working implementation exactly
         system_prompt = f"""You are an expert analyst reviewing customer service call transcripts.
 
 {context}
@@ -1319,33 +1319,37 @@ Your role:
 
 The user is asking about the transcripts above. Answer their questions accurately based on the data provided."""
 
-        full_prompt = f"""{system_prompt}
+        # User message contains ONLY the question (not buried in context!)
+        user_message = question
 
-User Question: {question}"""
+        print(f"  Context size: {len(system_prompt):,} characters")
+        print(f"  Question: {question[:100]}...")
 
-        print(f"  Full prompt size: {len(full_prompt):,} characters (~{len(full_prompt)//4:,} tokens)")
-
-        # Call AWS Bedrock
+        # Call AWS Bedrock using Converse API (proper way with separate system/user messages)
         try:
             bedrock = BedrockClient(region_name="us-east-1")
-            # UPGRADED: Using Claude 3.5 Sonnet v2 (much better than Claude 3 Sonnet v1)
+            # UPGRADED: Using Claude 3.5 Sonnet v2
             model_id = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
-            # Limit prompt size to avoid token limits
-            max_prompt_chars = 180000  # Claude 3.5 Sonnet has 200k context window
-            was_truncated = False
-            if len(full_prompt) > max_prompt_chars:
-                full_prompt = full_prompt[:max_prompt_chars] + "\n\n[Context truncated due to length...]"
-                was_truncated = True
-                print(f"  ⚠️ WARNING: Prompt truncated from {len(full_prompt):,} to {max_prompt_chars:,} characters")
+            # Build messages array (just the user question)
+            messages = [
+                {
+                    'role': 'user',
+                    'content': [{'text': user_message}]
+                }
+            ]
 
-            print(f"\n🚀 Sending to Bedrock (model: {model_id})...")
+            print(f"\n🚀 Sending to Bedrock Converse API (model: {model_id})...")
             print(f"  Max output tokens: 4096")
 
-            answer, input_tokens, output_tokens = bedrock.simple_prompt(
-                prompt=full_prompt,
+            # Use Converse API with separate system prompt and user message
+            answer, input_tokens, output_tokens = bedrock.converse(
+                messages=messages,
+                system_prompt=system_prompt,
                 model_id=model_id,
-                max_tokens=4096  # INCREASED: 2000 → 4096 for more detailed responses
+                max_tokens=4096,
+                temperature=0.7,
+                top_p=0.9
             )
 
             print(f"\n✅ Bedrock Response Received:")
