@@ -239,4 +239,42 @@ class BedrockClient:
             response_body.get('usage', {}).get('output_tokens', 0)
         )
 
+    def converse(self, messages, system_prompt, model_id, max_tokens=4096, temperature=0.7, top_p=0.9):
+        """
+        Use the Converse API with separate system prompt and messages.
+        This is the proper way to send context + question to Claude.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            system_prompt: System-level instructions and context
+            model_id: Model ID to use
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            top_p: Top-p sampling
+
+        Returns:
+            tuple: (response_text, input_tokens, output_tokens)
+        """
+        response = self.client.converse(
+            modelId=model_id,
+            messages=messages,
+            system=[{"text": system_prompt}],
+            inferenceConfig={
+                "maxTokens": max_tokens,
+                "temperature": temperature,
+                "topP": top_p
+            }
+        )
+
+        # Extract text from response
+        output_message = response['output']['message']
+        response_text = output_message['content'][0]['text']
+
+        # Extract token usage
+        usage = response.get('usage', {})
+        input_tokens = usage.get('inputTokens', 0)
+        output_tokens = usage.get('outputTokens', 0)
+
+        return response_text, input_tokens, output_tokens
+
 

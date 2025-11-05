@@ -1056,50 +1056,44 @@ def prepare_chat_context_from_csv(csv_path, filters):
     print(f"  Transcripts sampled: {len(sampled_filenames)}")
     print(f"  Total conversation turns in sample: {len(sampled_df)}")
 
-    # Build context
+    # Build context - SIMPLIFIED format matching working implementation
     context_parts = [
-        f"You are analyzing customer service transcripts with these characteristics:",
-        f"- Category: {filters.get('category', 'N/A')}",
-        f"- Topic: {filters.get('topic', 'N/A')}",
-        f"- Intent: {filters.get('intent', 'N/A')}",
-        f"- Agent Task: {filters.get('agent_task', 'N/A')}",
-        f"- Total transcripts in dataset: {total_transcripts}",
+        f"=== CUSTOMER SERVICE CALL TRANSCRIPTS ===\n",
+        f"Intent Category: {filters.get('intent', 'N/A')}",
+        f"Topic: {filters.get('topic', 'N/A')}",
+        f"Category: {filters.get('category', 'N/A')}",
+        f"Agent Task: {filters.get('agent_task', 'N/A')}",
+        f"Number of Calls: {len(sampled_filenames)}",
         sampling_note,
-        "\n" + "="*60 + "\n"
+        "\nEach call shows the conversation between Customer and Agent.\n"
     ]
 
-    # Group by transcript and format conversations
+    # Group by transcript and format conversations - SIMPLE FORMAT (no timestamps!)
     for idx, filename in enumerate(sampled_filenames, 1):
         transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
 
         # Limit turns per transcript to manage token usage
-        # Increased to 100 to provide more complete conversation context
-        MAX_TURNS_PER_TRANSCRIPT = 100
+        MAX_TURNS_PER_TRANSCRIPT = 150  # Increased for more context
         if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
             transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
             was_truncated = True
         else:
             was_truncated = False
 
-        context_parts.append(f"\n--- TRANSCRIPT {idx}: {filename} ---")
+        context_parts.append(f"\n--- Call {idx}: {filename} ---")
 
-        # Format conversation
+        # Format conversation - SIMPLE: just "Party: text" (no timestamps!)
         for _, row in transcript_rows.iterrows():
-            speaker = row['Party']  # Already "Agent" or "Customer" from CSV
-            start_sec = int(row['StartOffset (sec)'])
-            minutes = start_sec // 60
-            seconds = start_sec % 60
-            time_str = f"{minutes:02d}:{seconds:02d}"
+            party = row['Party']  # "Agent" or "Customer"
             text = row['Text']
-
-            context_parts.append(f"[{time_str}] {speaker}: {text}")
+            context_parts.append(f"{party}: {text}")
 
         if was_truncated:
             original_count = len(sampled_df[sampled_df['Filename'] == filename])
             omitted = original_count - MAX_TURNS_PER_TRANSCRIPT
-            context_parts.append(f"\n[... {omitted} more conversation turns omitted for brevity ...]")
+            context_parts.append(f"[... {omitted} more turns omitted ...]")
 
-        context_parts.append("")  # Empty line between transcripts
+        context_parts.append("")  # Empty line between calls
 
     context_str = "\n".join(context_parts)
 
@@ -1311,53 +1305,51 @@ def chat_query(project_id):
         print(f"\n📝 Context Preparation Complete:")
         print(f"  Transcripts sampled for AI: {sampled_count} (from {total_count} total)")
 
-        # Create prompt for AI
-        full_prompt = f"""You are an AI assistant analyzing customer service call transcripts.
-
-IMPORTANT: You have been provided with {sampled_count} complete call transcripts above. Each transcript shows a conversation between an Agent and a Customer, with timestamps in the format [MM:SS] Speaker: Text.
-
-These are REAL, COMPLETE transcripts from actual customer service calls. You MUST analyze the conversations provided above to answer the user's question.
+        # Create system prompt with context - matches working implementation exactly
+        system_prompt = f"""You are an expert analyst reviewing customer service call transcripts.
 
 {context}
 
-========================
-USER QUESTION: {question}
-========================
+Your role:
+- Answer questions about these specific transcripts
+- Provide specific examples and quotes when relevant
+- Identify patterns and insights
+- Be concise but thorough
+- If asked to summarize, provide actionable insights
 
-INSTRUCTIONS:
-1. Analyze ALL {sampled_count} transcripts provided above carefully
-2. Provide specific, detailed answers based on the actual conversations shown
-3. Quote or reference specific exchanges from the transcripts when relevant
-4. If asked about patterns or trends, analyze across ALL transcripts shown above
-5. Do NOT say you don't have enough context - you have {sampled_count} complete transcripts
-6. Format your response with clear paragraphs and bullet points
-7. Be specific and cite transcript numbers (e.g., "In Transcript 3..." or "Across transcripts 1-{sampled_count}...")
+The user is asking about the transcripts above. Answer their questions accurately based on the data provided."""
 
-Answer the user's question now based on the {sampled_count} transcripts provided above:"""
+        # User message contains ONLY the question (not buried in context!)
+        user_message = question
 
-        print(f"  Full prompt size: {len(full_prompt):,} characters (~{len(full_prompt)//4:,} tokens)")
+        print(f"  Context size: {len(system_prompt):,} characters")
+        print(f"  Question: {question[:100]}...")
 
-        # Call AWS Bedrock
+        # Call AWS Bedrock using Converse API (proper way with separate system/user messages)
         try:
             bedrock = BedrockClient(region_name="us-east-1")
-            model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+            # UPGRADED: Using Claude 3.5 Sonnet v2
+            model_id = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
-            # Limit prompt size to avoid token limits and truncation issues
-            max_prompt_chars = 90000  # ~22.5k tokens - conservative limit to prevent Bedrock errors
-            was_truncated = False
-            if len(full_prompt) > max_prompt_chars:
-                full_prompt = full_prompt[:max_prompt_chars] + "\n\n[Context truncated due to length...]"
-                was_truncated = True
-                print(f"  ⚠️ WARNING: Prompt truncated from {len(full_prompt):,} to {max_prompt_chars:,} characters")
-                print(f"  ⚠️ Truncation may cause incomplete analysis. Consider using fewer/shorter transcripts.")
+            # Build messages array (just the user question)
+            messages = [
+                {
+                    'role': 'user',
+                    'content': [{'text': user_message}]
+                }
+            ]
 
-            print(f"\n🚀 Sending to Bedrock (model: {model_id})...")
-            print(f"  Max output tokens: 2000")
+            print(f"\n🚀 Sending to Bedrock Converse API (model: {model_id})...")
+            print(f"  Max output tokens: 4096")
 
-            answer, input_tokens, output_tokens = bedrock.simple_prompt(
-                prompt=full_prompt,
+            # Use Converse API with separate system prompt and user message
+            answer, input_tokens, output_tokens = bedrock.converse(
+                messages=messages,
+                system_prompt=system_prompt,
                 model_id=model_id,
-                max_tokens=2000
+                max_tokens=4096,
+                temperature=0.7,
+                top_p=0.9
             )
 
             print(f"\n✅ Bedrock Response Received:")
