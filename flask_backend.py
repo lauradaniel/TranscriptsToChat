@@ -9,6 +9,9 @@ import os
 import json
 import sys
 import platform
+import csv
+import hashlib
+import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from database import TranscriptDatabase
@@ -900,6 +903,210 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     return "\n".join(context_parts), len(sample_transcripts)
 
 
+def create_transcript_csv(project_id, filters, transcript_refs):
+    """
+    Create a CSV file from JSON transcripts for efficient AI processing.
+
+    CSV Structure:
+    - Filename: Name of transcript (e.g., "Transcript330476")
+    - Line: Running conversation line number (starts at 1 for each transcript)
+    - Party: 0 = Agent, 1 = Caller
+    - StartOffset (sec): Start time in seconds
+    - EndOffset (sec): End time in seconds
+    - Text: The spoken text
+
+    Args:
+        project_id: Project ID
+        filters: Dict with intent, topic, category, agent_task
+        transcript_refs: List of (interaction_id, file_path) tuples
+
+    Returns:
+        str: Path to created CSV file
+    """
+    # Get project name from database
+    with TranscriptDatabase(DB_PATH) as local_db:
+        project = local_db.get_project(project_id)
+        project_name = project['name'] if project else f"Project{project_id}"
+
+    # Create data folder structure: /data/ProjectName_YYYY-MM-DD/
+    today = datetime.now().strftime('%Y-%m-%d')
+    data_folder = Path(f"data/{project_name}_{today}")
+    data_folder.mkdir(parents=True, exist_ok=True)
+
+    # Create unique filename based on filters hash
+    filter_str = f"{filters.get('intent', '')}_{filters.get('topic', '')}_{filters.get('category', '')}_{filters.get('agent_task', '')}"
+    filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
+    csv_path = data_folder / f"transcripts_{filter_hash}.csv"
+
+    # If CSV already exists, return it
+    if csv_path.exists():
+        print(f"  📁 Using existing CSV: {csv_path}")
+        return str(csv_path)
+
+    print(f"\n📝 Creating CSV file: {csv_path}")
+    print(f"  Processing {len(transcript_refs)} transcript files...")
+
+    # Prepare CSV data
+    csv_rows = []
+    processed_count = 0
+    failed_count = 0
+
+    for interaction_id, file_path in transcript_refs:
+        # Load JSON transcript
+        transcript_data = load_transcript_file(file_path)
+        if not transcript_data:
+            failed_count += 1
+            continue
+
+        # Clean transcript to get conversation turns
+        cleaned = clean_transcript(transcript_data)
+        if not cleaned:
+            failed_count += 1
+            continue
+
+        # Extract filename from interaction_id or file_path
+        # Example: Transcript330476.CSV.json → Transcript330476
+        filename = str(interaction_id)
+        if 'Transcript' in str(file_path):
+            # Extract from path
+            import re
+            match = re.search(r'Transcript\d+', str(file_path))
+            if match:
+                filename = match.group(0)
+
+        # Add each conversation turn as a CSV row
+        for line_num, turn in enumerate(cleaned, start=1):
+            csv_rows.append({
+                'Filename': filename,
+                'Line': line_num,
+                'Party': 0 if turn.get('speaker') == 'Agent' else 1,
+                'StartOffset (sec)': turn.get('start_time', 0),
+                'EndOffset (sec)': turn.get('end_time', 0),
+                'Text': turn.get('text', '').strip()
+            })
+
+        processed_count += 1
+        if processed_count % 10 == 0:
+            print(f"  Processed {processed_count}/{len(transcript_refs)} transcripts...")
+
+    # Write CSV file
+    if csv_rows:
+        df = pd.DataFrame(csv_rows)
+        df.to_csv(csv_path, index=False, encoding='utf-8')
+
+        print(f"  ✅ CSV created successfully!")
+        print(f"  Total rows: {len(csv_rows)}")
+        print(f"  Processed: {processed_count} transcripts")
+        print(f"  Failed: {failed_count} transcripts")
+    else:
+        print(f"  ❌ No data to write to CSV")
+        return None
+
+    return str(csv_path)
+
+
+def prepare_chat_context_from_csv(csv_path, filters):
+    """
+    Prepare AI context from CSV file with smart sampling.
+
+    Args:
+        csv_path: Path to the transcript CSV file
+        filters: Dict with intent, topic, category, agent_task
+
+    Returns:
+        tuple: (context_string, transcript_count, total_transcripts)
+    """
+    # Load CSV
+    df = pd.read_csv(csv_path)
+
+    if df.empty:
+        return "No transcript data available.", 0, 0
+
+    # Get unique transcripts (by Filename)
+    unique_transcripts = df['Filename'].unique()
+    total_transcripts = len(unique_transcripts)
+
+    print(f"\n📊 CSV Data Loaded:")
+    print(f"  Total rows: {len(df)}")
+    print(f"  Total transcripts: {total_transcripts}")
+
+    # Smart sampling strategy - now we can be more aggressive with CSV!
+    if total_transcripts <= 15:
+        # Small group: include all
+        sampled_filenames = unique_transcripts
+        sampling_note = ""
+    elif total_transcripts <= 50:
+        # Medium group: include first 25
+        sampled_filenames = unique_transcripts[:25]
+        sampling_note = f"\n(Showing first 25 of {total_transcripts} total transcripts)"
+    elif total_transcripts <= 150:
+        # Large group: sample evenly to get ~30
+        step = total_transcripts // 30
+        sampled_filenames = unique_transcripts[::step][:30]
+        sampling_note = f"\n(Showing representative sample of 30 from {total_transcripts} total transcripts)"
+    else:
+        # Very large group: stratified sample of 40
+        step = total_transcripts // 40
+        sampled_filenames = unique_transcripts[::step][:40]
+        sampling_note = f"\n(Showing stratified sample of 40 from {total_transcripts} total transcripts)"
+
+    # Filter CSV to only sampled transcripts
+    sampled_df = df[df['Filename'].isin(sampled_filenames)]
+
+    print(f"  Transcripts sampled: {len(sampled_filenames)}")
+    print(f"  Total conversation turns in sample: {len(sampled_df)}")
+
+    # Build context
+    context_parts = [
+        f"You are analyzing customer service transcripts with these characteristics:",
+        f"- Category: {filters.get('category', 'N/A')}",
+        f"- Topic: {filters.get('topic', 'N/A')}",
+        f"- Intent: {filters.get('intent', 'N/A')}",
+        f"- Agent Task: {filters.get('agent_task', 'N/A')}",
+        f"- Total transcripts in dataset: {total_transcripts}",
+        sampling_note,
+        "\n" + "="*60 + "\n"
+    ]
+
+    # Group by transcript and format conversations
+    for idx, filename in enumerate(sampled_filenames, 1):
+        transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
+
+        # Limit turns per transcript to manage token usage
+        MAX_TURNS_PER_TRANSCRIPT = 80
+        if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
+            transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
+            was_truncated = True
+        else:
+            was_truncated = False
+
+        context_parts.append(f"\n--- TRANSCRIPT {idx}: {filename} ---")
+
+        # Format conversation
+        for _, row in transcript_rows.iterrows():
+            speaker = "Agent" if row['Party'] == 0 else "Caller"
+            start_sec = int(row['StartOffset (sec)'])
+            minutes = start_sec // 60
+            seconds = start_sec % 60
+            time_str = f"{minutes:02d}:{seconds:02d}"
+            text = row['Text']
+
+            context_parts.append(f"[{time_str}] {speaker}: {text}")
+
+        if was_truncated:
+            original_count = len(sampled_df[sampled_df['Filename'] == filename])
+            omitted = original_count - MAX_TURNS_PER_TRANSCRIPT
+            context_parts.append(f"\n[... {omitted} more conversation turns omitted for brevity ...]")
+
+        context_parts.append("")  # Empty line between transcripts
+
+    context_str = "\n".join(context_parts)
+
+    print(f"  Context size: {len(context_str):,} characters (~{len(context_str)//4:,} tokens)")
+
+    return context_str, len(sampled_filenames), total_transcripts
+
+
 @app.route('/api/projects/<int:project_id>/chat/verify', methods=['POST'])
 def verify_transcript_files(project_id):
     """
@@ -1076,7 +1283,7 @@ def chat_query(project_id):
             transcript_refs = local_db.get_interaction_ids_by_filter(project_id, filters)
 
         print(f"\n{'='*60}")
-        print(f"🔍 CHAT QUERY DEBUG - Project {project_id}")
+        print(f"🔍 CHAT QUERY DEBUG - Project {project_id} (CSV-based approach)")
         print(f"{'='*60}")
         print(f"Question: {question[:100]}...")
         print(f"Filters: {filters}")
@@ -1088,55 +1295,20 @@ def chat_query(project_id):
                 'error': 'No transcripts found matching the specified filters'
             }), 404
 
-        # Load and clean transcripts
-        transcripts = []
-        failed_loads = 0
-        total_turns = 0
+        # Step 1: Create or load CSV file
+        csv_path = create_transcript_csv(project_id, filters, transcript_refs)
 
-        for idx, (interaction_id, file_path) in enumerate(transcript_refs):
-            transcript_data = load_transcript_file(file_path)
-            if transcript_data:
-                cleaned = clean_transcript(transcript_data)
-                if cleaned:
-                    turn_count = len(cleaned)
-                    total_turns += turn_count
-                    transcripts.append({
-                        'interaction_id': interaction_id,
-                        'data': cleaned
-                    })
-                    if idx < 3:  # Log first 3 for debugging
-                        print(f"  ✅ Loaded transcript {interaction_id}: {turn_count} conversation turns")
-                else:
-                    print(f"  ⚠️ Transcript {interaction_id}: Loaded but no turns after cleaning")
-                    failed_loads += 1
-            else:
-                print(f"  ❌ Failed to load transcript {interaction_id}")
-                failed_loads += 1
-
-        print(f"\n📊 Loading Summary:")
-        print(f"  Successfully loaded: {len(transcripts)} transcripts")
-        print(f"  Failed to load: {failed_loads} transcripts")
-        print(f"  Total conversation turns: {total_turns}")
-        print(f"  Average turns per transcript: {total_turns / len(transcripts) if transcripts else 0:.1f}")
-
-        if not transcripts:
+        if not csv_path or not os.path.exists(csv_path):
             return jsonify({
                 'success': False,
-                'error': f'Could not load any transcript files. {failed_loads} files failed to load. Check file paths and permissions.'
+                'error': 'Failed to create transcript CSV file'
             }), 500
 
-        # Prepare context for AI
-        context, total_analyzed = prepare_chat_context(
-            [t['data'] for t in transcripts],
-            filters.get('intent', 'N/A'),
-            filters.get('topic', 'N/A'),
-            filters.get('category', 'N/A'),
-            filters.get('agent_task', 'N/A')
-        )
+        # Step 2: Prepare context from CSV
+        context, sampled_count, total_count = prepare_chat_context_from_csv(csv_path, filters)
 
-        print(f"\n📝 Context Preparation:")
-        print(f"  Transcripts sampled for AI: {total_analyzed} (from {len(transcripts)} total)")
-        print(f"  Context size: {len(context):,} characters (~{len(context)//4:,} tokens)")
+        print(f"\n📝 Context Preparation Complete:")
+        print(f"  Transcripts sampled for AI: {sampled_count} (from {total_count} total)")
 
         # Create prompt for AI
         full_prompt = f"""You are an AI assistant analyzing customer service call transcripts.
@@ -1190,8 +1362,8 @@ Instructions:
             return jsonify({
                 'success': True,
                 'answer': answer,
-                'transcript_count': len(transcripts),
-                'failed_loads': failed_loads,
+                'transcript_count': total_count,
+                'sampled_count': sampled_count,
                 'tokens_used': {
                     'input': input_tokens,
                     'output': output_tokens
@@ -1222,7 +1394,7 @@ Instructions:
             return jsonify({
                 'success': False,
                 'error': f'AI service error: {str(bedrock_error)}',
-                'transcript_count': len(transcripts)
+                'transcript_count': total_count if 'total_count' in locals() else 0
             }), 500
 
     except Exception as e:
