@@ -1385,7 +1385,8 @@ The user is asking about the transcripts above. Answer their questions accuratel
                 print(f"  💡 Wait 60 seconds before retry")
             elif "ValidationException" in error_msg or "token" in error_msg.lower():
                 print(f"  ⚠️ Possible token limit exceeded")
-                print(f"  💡 Prompt was {len(full_prompt):,} chars (~{len(full_prompt)//4:,} tokens)")
+                if 'system_prompt' in locals():
+                    print(f"  💡 Context was {len(system_prompt):,} chars (~{len(system_prompt)//4:,} tokens)")
 
             import traceback
             traceback.print_exc()
