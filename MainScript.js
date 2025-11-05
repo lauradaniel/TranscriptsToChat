@@ -776,7 +776,7 @@ let currentChatContext = {
     conversationHistory: []
 };
 
-function openAIChat(intent, topic) {
+async function openAIChat(intent, topic) {
     console.log('Opening AI Chat for:', { intent, topic });
 
     // Get the selected project ID from the dropdown
@@ -818,39 +818,89 @@ function openAIChat(intent, topic) {
         subtitle.textContent = `${rowData.Category} > ${rowData.Topic} > ${rowData.Intent} (${rowData.Volume} transcripts)`;
     }
 
-    // Clear previous messages
+    // Show modal with loading indicator
+    const modal = document.getElementById('aiChatModal');
     const messagesContainer = document.getElementById('aiChatMessages');
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    // Show loading indicator while preparing chat context
     if (messagesContainer) {
         messagesContainer.innerHTML = `
             <div class="ai-chat-message ai-chat-message-system">
                 <div class="ai-chat-message-content">
-                    <p><strong>Chat session started</strong></p>
-                    <p>Ask questions about the ${rowData.Volume} transcripts in this group.</p>
-                    <p class="ai-chat-context-info">
-                        Category: ${rowData.Category}<br>
-                        Topic: ${rowData.Topic}<br>
-                        Intent: ${rowData.Intent}<br>
-                        Agent Task: ${rowData.Agent_Task}
-                    </p>
-                    <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
-                        🔍 Verify File Access
-                    </button>
+                    <p><strong>🔄 Preparing chat session...</strong></p>
+                    <p>Loading ${rowData.Volume} transcripts, please wait...</p>
+                    <div class="ai-chat-loading-spinner"></div>
                 </div>
             </div>
         `;
     }
 
-    // Show modal
-    const modal = document.getElementById('aiChatModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden', 'false');
+    try {
+        // Pre-generate CSV file (this is the slow part - do it once upfront)
+        console.log('Preparing chat context (generating CSV)...');
+        const prepareResponse = await fetch(`${API_BASE}/api/projects/${projectId}/chat/prepare`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filters: currentChatContext.filters
+            })
+        });
+
+        const prepareResult = await prepareResponse.json();
+
+        if (!prepareResult.success) {
+            throw new Error(prepareResult.error || 'Failed to prepare chat context');
+        }
+
+        console.log('Chat context prepared successfully!');
+
+        // Now show the ready message
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="ai-chat-message ai-chat-message-system">
+                    <div class="ai-chat-message-content">
+                        <p><strong>✅ Chat session ready!</strong></p>
+                        <p>Ask questions about the ${prepareResult.transcript_count} transcripts in this group.</p>
+                        <p class="ai-chat-context-info">
+                            Category: ${rowData.Category}<br>
+                            Topic: ${rowData.Topic}<br>
+                            Intent: ${rowData.Intent}<br>
+                            Agent Task: ${rowData.Agent_Task}
+                        </p>
+                        <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
+                            🔍 Verify File Access
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
 
         // Focus on input
         setTimeout(() => {
             const input = document.getElementById('aiChatInput');
             if (input) input.focus();
         }, 100);
+
+    } catch (error) {
+        console.error('Error preparing chat:', error);
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="ai-chat-message ai-chat-message-error">
+                    <div class="ai-chat-message-content">
+                        <p><strong>❌ Error preparing chat</strong></p>
+                        <p>${error.message}</p>
+                        <p>Please try again or contact support.</p>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 
@@ -986,6 +1036,21 @@ async function sendChatMessage() {
         content: question
     });
 
+    // Show "AI Thinking" indicator
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.className = 'ai-chat-message ai-chat-message-thinking';
+    thinkingDiv.id = 'ai-thinking-indicator';
+    thinkingDiv.innerHTML = `
+        <div class="ai-chat-message-content">
+            <p><strong>🤔 AI is thinking...</strong></p>
+            <div class="ai-chat-loading-spinner"></div>
+        </div>
+    `;
+    messagesContainer.appendChild(thinkingDiv);
+
+    // Scroll to show thinking indicator
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
     try {
         // Call backend API
         const response = await fetch(`${API_BASE}/api/projects/${currentChatContext.projectId}/chat/query`, {
@@ -1000,6 +1065,12 @@ async function sendChatMessage() {
         });
 
         const result = await response.json();
+
+        // Remove thinking indicator
+        const thinkingIndicator = document.getElementById('ai-thinking-indicator');
+        if (thinkingIndicator) {
+            thinkingIndicator.remove();
+        }
 
         if (result.success) {
             // Add AI response to UI
@@ -1020,6 +1091,13 @@ async function sendChatMessage() {
 
     } catch (error) {
         console.error('Chat error:', error);
+
+        // Remove thinking indicator on error too
+        const thinkingIndicator = document.getElementById('ai-thinking-indicator');
+        if (thinkingIndicator) {
+            thinkingIndicator.remove();
+        }
+
         addChatMessage('error', 'Failed to connect to AI service. Please check that the backend is running and AWS credentials are configured.');
     } finally {
         // Re-enable input

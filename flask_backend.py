@@ -1231,6 +1231,86 @@ def verify_transcript_files(project_id):
         }), 500
 
 
+@app.route('/api/projects/<int:project_id>/chat/prepare', methods=['POST'])
+def prepare_chat(project_id):
+    """
+    Pre-generate CSV file when user opens chat (before asking questions).
+    This provides a better UX - user sees loading once, then chat is instant.
+
+    Request body:
+    {
+        "filters": {
+            "intent": "Billing Question",
+            "topic": "Payment Issue",
+            "category": "Finance",
+            "agent_task": "Process Refund"
+        }
+    }
+
+    Returns:
+    {
+        "success": true,
+        "csv_created": true,
+        "transcript_count": 71,
+        "message": "Chat context prepared successfully"
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Request body is required'
+            }), 400
+
+        filters = data.get('filters', {})
+
+        # Get transcript file paths from database
+        with TranscriptDatabase(DB_PATH) as local_db:
+            transcript_refs = local_db.get_interaction_ids_by_filter(project_id, filters)
+
+        print(f"\n{'='*60}")
+        print(f"📝 PREPARING CHAT CONTEXT - Project {project_id}")
+        print(f"{'='*60}")
+        print(f"Filters: {filters}")
+        print(f"Total transcript files found in DB: {len(transcript_refs)}")
+
+        if not transcript_refs:
+            return jsonify({
+                'success': False,
+                'error': 'No transcripts found matching the specified filters'
+            }), 404
+
+        # Create CSV file (this is the time-consuming part)
+        csv_path = create_transcript_csv(project_id, filters, transcript_refs)
+
+        if not csv_path or not os.path.exists(csv_path):
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create transcript CSV file'
+            }), 500
+
+        print(f"✅ Chat context prepared successfully!")
+        print(f"{'='*60}\n")
+
+        return jsonify({
+            'success': True,
+            'csv_created': True,
+            'transcript_count': len(transcript_refs),
+            'message': 'Chat context prepared successfully'
+        })
+
+    except Exception as e:
+        print(f"Prepare chat error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/api/projects/<int:project_id>/chat/query', methods=['POST'])
 def chat_query(project_id):
     """

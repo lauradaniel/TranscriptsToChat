@@ -1670,3 +1670,30 @@ code {
 .ai-chat-verify-btn:hover {
   background-color: var(--ngnx-color-accent-navy-700);
 }
+
+/* Loading spinner for chat */
+.ai-chat-loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 8px auto;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--ngnx-color-accent-navy-600);
+  border-radius: 50%;
+  animation: ai-chat-spin 1s linear infinite;
+}
+
+@keyframes ai-chat-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Thinking indicator message */
+.ai-chat-message-thinking {
+  opacity: 0.8;
+}
+
+.ai-chat-message-thinking .ai-chat-message-content {
+  background-color: #f0f8ff;
+  border-left: 3px solid var(--ngnx-color-accent-navy-600);
+}
