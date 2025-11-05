@@ -979,7 +979,7 @@ def create_transcript_csv(project_id, filters, transcript_refs):
             csv_rows.append({
                 'Filename': filename,
                 'Line': line_num,
-                'Party': 0 if turn.get('speaker') == 'Agent' else 1,
+                'Party': 'Agent' if turn.get('speaker') == 'Agent' else 'Customer',
                 'StartOffset (sec)': turn.get('start_time', 0),
                 'EndOffset (sec)': turn.get('end_time', 0),
                 'Text': turn.get('text', '').strip()
@@ -1030,25 +1030,25 @@ def prepare_chat_context_from_csv(csv_path, filters):
     print(f"  Total rows: {len(df)}")
     print(f"  Total transcripts: {total_transcripts}")
 
-    # Smart sampling strategy - now we can be more aggressive with CSV!
+    # Smart sampling strategy - balanced approach for quality analysis
     if total_transcripts <= 15:
         # Small group: include all
         sampled_filenames = unique_transcripts
         sampling_note = ""
     elif total_transcripts <= 50:
-        # Medium group: include first 25
-        sampled_filenames = unique_transcripts[:25]
-        sampling_note = f"\n(Showing first 25 of {total_transcripts} total transcripts)"
+        # Medium group: include first 18
+        sampled_filenames = unique_transcripts[:18]
+        sampling_note = f"\n(Showing first 18 of {total_transcripts} total transcripts)"
     elif total_transcripts <= 150:
-        # Large group: sample evenly to get ~30
-        step = total_transcripts // 30
-        sampled_filenames = unique_transcripts[::step][:30]
-        sampling_note = f"\n(Showing representative sample of 30 from {total_transcripts} total transcripts)"
+        # Large group: sample evenly to get ~20
+        step = total_transcripts // 20
+        sampled_filenames = unique_transcripts[::step][:20]
+        sampling_note = f"\n(Showing representative sample of 20 from {total_transcripts} total transcripts)"
     else:
-        # Very large group: stratified sample of 40
-        step = total_transcripts // 40
-        sampled_filenames = unique_transcripts[::step][:40]
-        sampling_note = f"\n(Showing stratified sample of 40 from {total_transcripts} total transcripts)"
+        # Very large group: stratified sample of 25
+        step = total_transcripts // 25
+        sampled_filenames = unique_transcripts[::step][:25]
+        sampling_note = f"\n(Showing stratified sample of 25 from {total_transcripts} total transcripts)"
 
     # Filter CSV to only sampled transcripts
     sampled_df = df[df['Filename'].isin(sampled_filenames)]
@@ -1073,7 +1073,8 @@ def prepare_chat_context_from_csv(csv_path, filters):
         transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
 
         # Limit turns per transcript to manage token usage
-        MAX_TURNS_PER_TRANSCRIPT = 80
+        # Increased to 100 to provide more complete conversation context
+        MAX_TURNS_PER_TRANSCRIPT = 100
         if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
             transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
             was_truncated = True
@@ -1084,7 +1085,7 @@ def prepare_chat_context_from_csv(csv_path, filters):
 
         # Format conversation
         for _, row in transcript_rows.iterrows():
-            speaker = "Agent" if row['Party'] == 0 else "Caller"
+            speaker = row['Party']  # Already "Agent" or "Customer" from CSV
             start_sec = int(row['StartOffset (sec)'])
             minutes = start_sec // 60
             seconds = start_sec % 60
@@ -1313,19 +1314,26 @@ def chat_query(project_id):
         # Create prompt for AI
         full_prompt = f"""You are an AI assistant analyzing customer service call transcripts.
 
-Each transcript shows a conversation between an Agent and a Caller, with timestamps.
-Format: [MM:SS] Speaker: Text
+IMPORTANT: You have been provided with {sampled_count} complete call transcripts above. Each transcript shows a conversation between an Agent and a Customer, with timestamps in the format [MM:SS] Speaker: Text.
+
+These are REAL, COMPLETE transcripts from actual customer service calls. You MUST analyze the conversations provided above to answer the user's question.
 
 {context}
 
-User Question: {question}
+========================
+USER QUESTION: {question}
+========================
 
-Instructions:
-- Provide a detailed, accurate answer based on the transcripts above
-- Reference specific conversations when relevant
-- If asking about patterns or trends, analyze across all transcripts shown
-- If the transcripts don't contain enough information, say so clearly
-- Format your response with clear paragraphs and bullet points where appropriate"""
+INSTRUCTIONS:
+1. Analyze ALL {sampled_count} transcripts provided above carefully
+2. Provide specific, detailed answers based on the actual conversations shown
+3. Quote or reference specific exchanges from the transcripts when relevant
+4. If asked about patterns or trends, analyze across ALL transcripts shown above
+5. Do NOT say you don't have enough context - you have {sampled_count} complete transcripts
+6. Format your response with clear paragraphs and bullet points
+7. Be specific and cite transcript numbers (e.g., "In Transcript 3..." or "Across transcripts 1-{sampled_count}...")
+
+Answer the user's question now based on the {sampled_count} transcripts provided above:"""
 
         print(f"  Full prompt size: {len(full_prompt):,} characters (~{len(full_prompt)//4:,} tokens)")
 
