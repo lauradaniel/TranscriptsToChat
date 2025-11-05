@@ -768,12 +768,355 @@ function attachChatTableDragDropHandlers() {
  * Handler for AI Chat icon click
  * Opens AI chat interface for the selected intent/topic
  */
+
+// Global state for current chat session
+let currentChatContext = {
+    projectId: null,
+    filters: {},
+    conversationHistory: []
+};
+
 function openAIChat(intent, topic) {
     console.log('Opening AI Chat for:', { intent, topic });
-    // TODO: Implement AI chat functionality
-    // For now, just show an alert
-    alert(`AI Chat feature coming soon!\n\nIntent: ${intent}\nTopic: ${topic}`);
+
+    // Get the selected project ID from the dropdown
+    const projectIdInput = document.getElementById('chatProjectSearch');
+    const projectId = projectIdInput ? projectIdInput.getAttribute('data-selected-id') : null;
+
+    if (!projectId) {
+        alert('Please select a project first');
+        return;
+    }
+
+    // Get the full row data to extract Category and Agent_Task
+    const rows = currentChatData.filter(row =>
+        row.Intent === intent && row.Topic === topic
+    );
+
+    if (rows.length === 0) {
+        alert('Could not find matching data');
+        return;
+    }
+
+    const rowData = rows[0];
+
+    // Store chat context
+    currentChatContext = {
+        projectId: projectId,
+        filters: {
+            intent: rowData.Intent,
+            topic: rowData.Topic,
+            category: rowData.Category,
+            agent_task: rowData.Agent_Task
+        },
+        conversationHistory: []
+    };
+
+    // Update subtitle with context info
+    const subtitle = document.getElementById('aiChatSubtitle');
+    if (subtitle) {
+        subtitle.textContent = `${rowData.Category} > ${rowData.Topic} > ${rowData.Intent} (${rowData.Volume} transcripts)`;
+    }
+
+    // Clear previous messages
+    const messagesContainer = document.getElementById('aiChatMessages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = `
+            <div class="ai-chat-message ai-chat-message-system">
+                <div class="ai-chat-message-content">
+                    <p><strong>Chat session started</strong></p>
+                    <p>Ask questions about the ${rowData.Volume} transcripts in this group.</p>
+                    <p class="ai-chat-context-info">
+                        Category: ${rowData.Category}<br>
+                        Topic: ${rowData.Topic}<br>
+                        Intent: ${rowData.Intent}<br>
+                        Agent Task: ${rowData.Agent_Task}
+                    </p>
+                    <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
+                        🔍 Verify File Access
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Show modal
+    const modal = document.getElementById('aiChatModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+
+        // Focus on input
+        setTimeout(() => {
+            const input = document.getElementById('aiChatInput');
+            if (input) input.focus();
+        }, 100);
+    }
 }
+
+function closeAIChat() {
+    const modal = document.getElementById('aiChatModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    // Clear input
+    const input = document.getElementById('aiChatInput');
+    if (input) input.value = '';
+}
+
+async function verifyTranscriptFiles() {
+    if (!currentChatContext.projectId) {
+        alert('No project selected');
+        return;
+    }
+
+    // Show loading message
+    addChatMessage('system', 'Verifying transcript file accessibility...');
+
+    try {
+        const response = await fetch(`${API_BASE}/api/projects/${currentChatContext.projectId}/chat/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filters: currentChatContext.filters,
+                sample_size: 10  // Check first 10 files
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            let message = `**File Access Verification Results:**\n\n`;
+
+            // System info
+            if (result.system_info) {
+                message += `**Server Environment:**\n`;
+                message += `- Platform: ${result.system_info.platform} (${result.system_info.platform_details})\n`;
+                message += `- Python: ${result.system_info.python_version}\n`;
+                message += `- Path mappings configured: ${result.system_info.path_mappings_configured ? 'Yes' : '❌ No'}\n\n`;
+            }
+
+            message += `**File Summary:**\n`;
+            message += `Total files: ${result.total_files}\n`;
+            message += `Sample checked: ${result.sample_checked}\n`;
+            message += `✅ Accessible: ${result.accessible}\n`;
+            message += `❌ Inaccessible: ${result.inaccessible}\n\n`;
+
+            if (result.sample_results && result.sample_results.length > 0) {
+                message += `**Sample Details:**\n`;
+                result.sample_results.forEach((sample, idx) => {
+                    message += `\n${idx + 1}. ${sample.interaction_id}:\n`;
+                    if (sample.accessible) {
+                        message += `   ✅ Accessible (${sample.turn_count} turns, ${(sample.file_size / 1024).toFixed(1)} KB)\n`;
+                    } else {
+                        message += `   ❌ Not accessible\n`;
+                        message += `   Error: ${sample.error}\n`;
+                        if (sample.conversion_notes) {
+                            message += `   Notes: ${sample.conversion_notes}\n`;
+                        }
+                        if (sample.suggestion) {
+                            message += `   💡 ${sample.suggestion}\n`;
+                        }
+                        message += `   Path: ${sample.file_path}\n`;
+                    }
+                });
+            }
+
+            if (result.inaccessible > 0) {
+                message += `\n\n⚠️ **Problem Detected:**\n`;
+
+                if (result.system_info && result.system_info.platform === 'Linux' && !result.system_info.path_mappings_configured) {
+                    message += `Your Flask server is running on Linux, but Windows UNC paths (\\\\\\\\server\\\\share) won't work.\n\n`;
+                    message += `**Solutions:**\n`;
+                    message += `1. **Mount the network share** on your Linux server:\n`;
+                    message += `   \`sudo mount -t cifs //VAOD177APP05/Media /mnt/media -o username=your_user\`\n\n`;
+                    message += `2. **Configure PATH_MAPPINGS** in flask_backend.py:\n`;
+                    message += `   \`PATH_MAPPINGS = {'\\\\\\\\\\\\\\\\VAOD177APP05\\\\\\\\Media': '/mnt/media'}\`\n\n`;
+                    message += `3. **Run Flask on Windows** where UNC paths work natively\n`;
+                } else if (result.system_info && result.system_info.platform === 'Windows') {
+                    message += `Server is on Windows but files still not accessible.\n`;
+                    message += `- Check if you have network permissions\n`;
+                    message += `- Try accessing \\\\\\\\VAOD177APP05\\\\Media from the server\n`;
+                    message += `- Ensure Flask runs with correct user credentials\n`;
+                }
+            } else {
+                message += `\n✅ **All sampled files are accessible!** You can now use the AI chat.`;
+            }
+
+            addChatMessage('system', message);
+        } else {
+            addChatMessage('error', `Verification failed: ${result.error}`);
+        }
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        addChatMessage('error', 'Failed to verify files. Check that backend is running.');
+    }
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('aiChatInput');
+    const sendBtn = document.getElementById('aiChatSendBtn');
+    const messagesContainer = document.getElementById('aiChatMessages');
+
+    if (!input || !messagesContainer) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Disable input while processing
+    input.disabled = true;
+    sendBtn.disabled = true;
+    const originalBtnContent = sendBtn.innerHTML;
+    sendBtn.innerHTML = '<span style="font-size: 12px;">...</span>';
+
+    // Add user message to UI
+    addChatMessage('user', question);
+
+    // Clear input
+    input.value = '';
+
+    // Store in conversation history
+    currentChatContext.conversationHistory.push({
+        role: 'user',
+        content: question
+    });
+
+    try {
+        // Call backend API
+        const response = await fetch(`${API_BASE}/api/projects/${currentChatContext.projectId}/chat/query`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filters: currentChatContext.filters,
+                question: question
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Add AI response to UI
+            addChatMessage('assistant', result.answer, {
+                transcriptCount: result.transcript_count,
+                tokensUsed: result.tokens_used
+            });
+
+            // Store in conversation history
+            currentChatContext.conversationHistory.push({
+                role: 'assistant',
+                content: result.answer
+            });
+        } else {
+            // Show error message
+            addChatMessage('error', `Error: ${result.error}`);
+        }
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        addChatMessage('error', 'Failed to connect to AI service. Please check that the backend is running and AWS credentials are configured.');
+    } finally {
+        // Re-enable input
+        input.disabled = false;
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = originalBtnContent;
+        input.focus();
+    }
+}
+
+function addChatMessage(role, content, metadata = null) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    if (!messagesContainer) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-chat-message ai-chat-message-${role}`;
+
+    let messageHTML = `<div class="ai-chat-message-content">`;
+
+    if (role === 'user') {
+        messageHTML += `
+            <div class="ai-chat-message-label">You</div>
+            <p>${escapeHtml(content)}</p>
+        `;
+    } else if (role === 'assistant') {
+        messageHTML += `
+            <div class="ai-chat-message-label">AI Assistant</div>
+            <div class="ai-chat-message-text">${formatAIResponse(content)}</div>
+        `;
+
+        if (metadata) {
+            messageHTML += `
+                <div class="ai-chat-metadata">
+                    <small>Analyzed ${metadata.transcriptCount} transcripts |
+                    Tokens: ${metadata.tokensUsed.input} in, ${metadata.tokensUsed.output} out</small>
+                </div>
+            `;
+        }
+    } else if (role === 'system') {
+        messageHTML += `
+            <div class="ai-chat-message-label">System</div>
+            <div class="ai-chat-message-text">${formatAIResponse(content)}</div>
+        `;
+    } else if (role === 'error') {
+        messageHTML += `
+            <div class="ai-chat-message-label">Error</div>
+            <p style="color: #d32f2f;">${escapeHtml(content)}</p>
+        `;
+    }
+
+    messageHTML += `</div>`;
+    messageDiv.innerHTML = messageHTML;
+
+    messagesContainer.appendChild(messageDiv);
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatAIResponse(text) {
+    // Simple markdown-like formatting
+    // Convert newlines to <br>
+    let formatted = escapeHtml(text);
+
+    // Bold text: **text** -> <strong>text</strong>
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert newlines to paragraphs
+    formatted = formatted.split('\n\n').map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`).join('');
+
+    return formatted;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Handle Enter key in chat input (Shift+Enter for new line, Enter to send)
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('aiChatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
+});
 
 
 /* === 5. INITIALIZATION BLOCK === */

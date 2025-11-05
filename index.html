@@ -161,6 +161,47 @@
     </nx-side-panel>
   </section>
 
+  <!-- AI Chat Modal -->
+  <section id="aiChatModal" class="ai-chat-modal hidden" aria-hidden="true">
+    <div class="ai-chat-overlay" onclick="closeAIChat()"></div>
+    <div class="ai-chat-container">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-info">
+          <img src="assets/img/bot-builder.svg" alt="AI Chat" class="ai-chat-icon" />
+          <div>
+            <h3 class="ai-chat-title">AI Chat - Transcript Analysis</h3>
+            <p class="ai-chat-subtitle" id="aiChatSubtitle">Loading context...</p>
+          </div>
+        </div>
+        <button class="ai-chat-close-btn" onclick="closeAIChat()" aria-label="Close chat">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="ai-chat-messages" id="aiChatMessages">
+        <!-- Messages will be added here dynamically -->
+      </div>
+
+      <div class="ai-chat-input-container">
+        <textarea
+          id="aiChatInput"
+          class="ai-chat-input"
+          placeholder="Ask a question about these transcripts..."
+          rows="1"
+        ></textarea>
+        <button class="ai-chat-send-btn" id="aiChatSendBtn" onclick="sendChatMessage()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
   <script src="MainScript.js" defer></script>
 </body>
 </html>
