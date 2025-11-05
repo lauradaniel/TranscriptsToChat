@@ -1030,25 +1030,21 @@ def prepare_chat_context_from_csv(csv_path, filters):
     print(f"  Total rows: {len(df)}")
     print(f"  Total transcripts: {total_transcripts}")
 
-    # Smart sampling strategy - AGGRESSIVE: maximizing Claude 3.5 Sonnet's 200k context
-    if total_transcripts <= 25:
-        # Small group: include all
+    # Smart sampling strategy - MAXIMUM: up to 100 transcripts for comprehensive analysis
+    if total_transcripts <= 100:
+        # Include all transcripts up to 100 for maximum coverage
         sampled_filenames = unique_transcripts
-        sampling_note = ""
-    elif total_transcripts <= 70:
-        # Medium group: include first 45
-        sampled_filenames = unique_transcripts[:45]
-        sampling_note = f"\n(Showing first 45 of {total_transcripts} total transcripts)"
-    elif total_transcripts <= 200:
-        # Large group: sample evenly to get ~55
-        step = total_transcripts // 55
-        sampled_filenames = unique_transcripts[::step][:55]
-        sampling_note = f"\n(Showing representative sample of 55 from {total_transcripts} total transcripts)"
+        sampling_note = "" if total_transcripts <= 25 else f"\n(Analyzing all {total_transcripts} transcripts)"
+    elif total_transcripts <= 300:
+        # Large datasets: evenly sample 100 transcripts
+        step = total_transcripts // 100
+        sampled_filenames = unique_transcripts[::step][:100]
+        sampling_note = f"\n(Showing representative sample of 100 from {total_transcripts} total transcripts)"
     else:
-        # Very large group: stratified sample of 70
-        step = total_transcripts // 70
-        sampled_filenames = unique_transcripts[::step][:70]
-        sampling_note = f"\n(Showing stratified sample of 70 from {total_transcripts} total transcripts)"
+        # Very large datasets: stratified sample of 120
+        step = total_transcripts // 120
+        sampled_filenames = unique_transcripts[::step][:120]
+        sampling_note = f"\n(Showing stratified sample of 120 from {total_transcripts} total transcripts)"
 
     # Filter CSV to only sampled transcripts
     sampled_df = df[df['Filename'].isin(sampled_filenames)]
@@ -1073,8 +1069,8 @@ def prepare_chat_context_from_csv(csv_path, filters):
         transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
 
         # Limit turns per transcript to manage token usage
-        # Increased to 200 for more complete conversation context
-        MAX_TURNS_PER_TRANSCRIPT = 200
+        # Set to 150 to safely handle up to 100 transcripts within 200k token limit
+        MAX_TURNS_PER_TRANSCRIPT = 150
         if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
             transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
             was_truncated = True
