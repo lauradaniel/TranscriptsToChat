@@ -1036,14 +1036,14 @@ def prepare_chat_context_from_csv(csv_path, filters):
         sampled_filenames = unique_transcripts
         sampling_note = ""
     elif total_transcripts <= 100:
-        # Medium/Large group: cap at 50 transcripts (tested safe limit)
-        sampled_filenames = unique_transcripts[:50]
-        sampling_note = f"\n(Showing first 50 of {total_transcripts} total transcripts)"
+        # Medium/Large group: cap at 75 transcripts (tested safe limit)
+        sampled_filenames = unique_transcripts[:75]
+        sampling_note = f"\n(Showing first 75 of {total_transcripts} total transcripts)"
     elif total_transcripts <= 300:
-        # Very large datasets: evenly sample 50 transcripts
-        step = total_transcripts // 50
-        sampled_filenames = unique_transcripts[::step][:50]
-        sampling_note = f"\n(Showing representative sample of 50 from {total_transcripts} total transcripts)"
+        # Very large datasets: evenly sample 75 transcripts
+        step = total_transcripts // 75
+        sampled_filenames = unique_transcripts[::step][:75]
+        sampling_note = f"\n(Showing representative sample of 75 from {total_transcripts} total transcripts)"
     else:
         # Massive datasets: stratified sample of 60
         step = total_transcripts // 60
@@ -1073,7 +1073,7 @@ def prepare_chat_context_from_csv(csv_path, filters):
         transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
 
         # Limit turns per transcript to manage token usage
-        # Set to 120 to safely handle 50 transcripts within 200k token limit
+        # Set to 120 to safely handle 75 transcripts within 200k token limit
         MAX_TURNS_PER_TRANSCRIPT = 120
         if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
             transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
