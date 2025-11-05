@@ -845,26 +845,26 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     total_count = len(transcripts)
 
     # Smart sampling strategy based on group size
-    # OPTIMIZED: Balanced sample sizes to maximize coverage while staying under 100k char limit
+    # OPTIMIZED: Conservative limits to prevent truncation with very long transcripts (100+ turns avg)
     if total_count <= 10:
         # Small group: include all
         sample_transcripts = transcripts
         sampling_note = ""
     elif total_count <= 50:
-        # Medium group: include first 18
-        sample_transcripts = transcripts[:18]
-        sampling_note = f"\n(Showing first 18 of {total_count} total transcripts)"
+        # Medium group: include first 15
+        sample_transcripts = transcripts[:15]
+        sampling_note = f"\n(Showing first 15 of {total_count} total transcripts)"
     elif total_count <= 200:
-        # Large group: sample every Nth transcript to get ~20 samples
-        step = total_count // 20
-        sample_transcripts = transcripts[::step][:20]
-        sampling_note = f"\n(Showing representative sample of 20 from {total_count} total transcripts)"
+        # Large group: sample every Nth transcript to get ~15 samples
+        step = total_count // 15
+        sample_transcripts = transcripts[::step][:15]
+        sampling_note = f"\n(Showing representative sample of 15 from {total_count} total transcripts)"
     else:
-        # Very large group: stratified sample of 25
+        # Very large group: stratified sample of 18
         # Take samples from beginning, middle, and end
-        step = total_count // 25
-        sample_transcripts = transcripts[::step][:25]
-        sampling_note = f"\n(Showing stratified sample of 25 from {total_count} total transcripts)"
+        step = total_count // 18
+        sample_transcripts = transcripts[::step][:18]
+        sampling_note = f"\n(Showing stratified sample of 18 from {total_count} total transcripts)"
 
     context_parts = [
         f"You are analyzing customer service transcripts with these characteristics:",
@@ -878,8 +878,9 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     ]
 
     # Add formatted transcripts with per-transcript length limit
-    # Limit each transcript to 100 turns to ensure all sampled transcripts fit within token limits
-    MAX_TURNS_PER_TRANSCRIPT = 100
+    # Limit each transcript to 70 turns to ensure all sampled transcripts fit within token limits
+    # Target: 15 transcripts × 70 turns × ~80 chars/turn ≈ 84k chars (stays under 100k without truncation)
+    MAX_TURNS_PER_TRANSCRIPT = 70
 
     for idx, transcript in enumerate(sample_transcripts, 1):
         context_parts.append(f"\n--- TRANSCRIPT {idx} ---")
@@ -1161,13 +1162,14 @@ Instructions:
             bedrock = BedrockClient(region_name="us-east-1")
             model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
 
-            # Limit prompt size to avoid token limits
-            max_prompt_chars = 100000  # ~25k tokens
+            # Limit prompt size to avoid token limits and truncation issues
+            max_prompt_chars = 90000  # ~22.5k tokens - conservative limit to prevent Bedrock errors
             was_truncated = False
             if len(full_prompt) > max_prompt_chars:
                 full_prompt = full_prompt[:max_prompt_chars] + "\n\n[Context truncated due to length...]"
                 was_truncated = True
-                print(f"  ⚠️ Prompt truncated from {len(full_prompt):,} to {max_prompt_chars:,} characters")
+                print(f"  ⚠️ WARNING: Prompt truncated from {len(full_prompt):,} to {max_prompt_chars:,} characters")
+                print(f"  ⚠️ Truncation may cause incomplete analysis. Consider using fewer/shorter transcripts.")
 
             print(f"\n🚀 Sending to Bedrock (model: {model_id})...")
             print(f"  Max output tokens: 2000")
