@@ -290,6 +290,28 @@
               </div>
             </nx-form-field>
 
+            <!-- Separator -->
+            <div style="border-top: 1px solid var(--ngnx-color-application-glue-a-20); margin: 24px 0;"></div>
+
+            <!-- Column Visibility -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label">Table Columns</label>
+              <div class="filter-multiselect-container">
+                <input type="text"
+                       id="columnVisibilitySearchInput"
+                       class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Search columns..."
+                       onkeyup="filterColumnVisibilityOptions()"
+                       onfocus="showColumnVisibilityDropdown()" />
+                <div id="columnVisibilityDropdown" class="filter-dropdown hidden">
+                  <div class="filter-dropdown-options" id="columnVisibilityOptions">
+                    <!-- Populated by JavaScript -->
+                  </div>
+                </div>
+                <div class="filter-selected-items" id="columnVisibilitySelected"></div>
+              </div>
+            </nx-form-field>
+
             <!-- IsAutomatable Toggle -->
             <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
              
