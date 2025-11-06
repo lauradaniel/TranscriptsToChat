@@ -19,65 +19,77 @@ let currentSortDirection = 'desc';
  */
 function showView(viewName) {
     const createButtonContainer = document.getElementById('createProjectButtonContainer');
+    const filterButtonContainer = document.getElementById('filterProjectButtonContainer');
     const resultsPanel = document.getElementById('resultsPanel');
     const landingMain = document.querySelector('.landing-main');
-    const chatProjectSelector = document.getElementById('chatProjectSelectorContainer'); 
-    
+    const chatProjectSelector = document.getElementById('chatProjectSelectorContainer');
+
     let missingElement = null;
     if (!createButtonContainer) missingElement = 'createProjectButtonContainer';
+    if (!filterButtonContainer) missingElement = 'filterProjectButtonContainer';
     if (!resultsPanel) missingElement = 'resultsPanel';
     if (!landingMain) missingElement = 'landingMain (class: .landing-main)';
     if (!chatProjectSelector) missingElement = 'chatProjectSelectorContainer';
 
-    if (missingElement) { 
+    if (missingElement) {
         console.error(`CRITICAL ERROR: The element with ID/Class "${missingElement}" was not found by JavaScript. Navigation failed.`);
         return;
     }
 
     // 1. Reset state: Hide all view containers and UI controls
     resultsPanel.style.display = 'none';
-    
+
     // Clear or hide temporary content container (but keep resultsPanel in DOM)
     const tempContent = document.getElementById('temporaryViewContent');
     if (tempContent) {
         tempContent.remove();
     }
-    
+
     // Reset specific header elements for a clean slate
     createButtonContainer.style.display = 'none';
+    filterButtonContainer.style.display = 'none';
     chatProjectSelector.style.display = 'none';
 
 
     // 2. Apply view-specific logic
     if (viewName === 'admin') {
         console.log("Switching to ADMIN view...");
-        
+
         // SHOW: Create Project button
-        createButtonContainer.style.display = 'block'; 
-        
+        createButtonContainer.style.display = 'block';
+
+        // HIDE: Filter button (not shown in admin view)
+        filterButtonContainer.style.display = 'none';
+
         // SHOW: Results Table Panel
         resultsPanel.style.display = 'block';
-        
-        loadProjectsToTable(); 
-        
+
+        loadProjectsToTable();
+
     } else if (viewName === 'chat') {
         console.log("Switching to CHAT view...");
-        
+
         // SHOW: The Chat Project Selector dropdown
-        chatProjectSelector.style.display = 'flex'; 
-        
-        loadProjectsToChatDropdown(); 
-        
+        chatProjectSelector.style.display = 'flex';
+
+        // SHOW: Filter button
+        filterButtonContainer.style.display = 'block';
+
+        loadProjectsToChatDropdown();
+
         // Create temporary view content AFTER resultsPanel
         const tempDiv = document.createElement('div');
         tempDiv.id = 'temporaryViewContent';
         tempDiv.style.cssText = 'text-align: center;';
         tempDiv.innerHTML = '<img src="assets/img/TranscripttoChatBkrnd.png" alt="Home" class="bkrnd-icon-size" />';
         landingMain.appendChild(tempDiv);
-    
+
     } else if (viewName === 'home') {
         console.log("Switching to HOME view...");
-        
+
+        // SHOW: Filter button
+        filterButtonContainer.style.display = 'block';
+
         // Create temporary view content AFTER resultsPanel
         const tempDiv = document.createElement('div');
         tempDiv.id = 'temporaryViewContent';
@@ -108,11 +120,41 @@ function closeCreateProject() {
   }, 500);
 }
 
+function openFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  if (!panel) return;
+  panel.classList.remove('hidden');
+  panel.classList.add('is-open');
+  panel.setAttribute('aria-hidden', 'false');
+}
+
+function closeFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  if (!panel) return;
+  panel.classList.remove('is-open');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    panel.setAttribute('aria-hidden', 'true');
+  }, 500);
+}
+
+function applyFilters() {
+  // Placeholder function for applying filters
+  console.log('Apply filters clicked');
+  // TODO: Implement filter logic here
+  closeFilterPanel();
+}
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    const panel = document.getElementById('createProjectPanel');
-    if (panel && panel.classList.contains('is-open')) {
+    const createPanel = document.getElementById('createProjectPanel');
+    const filterPanel = document.getElementById('filterPanel');
+
+    if (createPanel && createPanel.classList.contains('is-open')) {
       closeCreateProject();
+    }
+    if (filterPanel && filterPanel.classList.contains('is-open')) {
+      closeFilterPanel();
     }
   }
 });
