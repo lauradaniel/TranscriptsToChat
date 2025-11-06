@@ -520,7 +520,25 @@ code {
   /* start off-canvas */
   transform: translateX(100%);
 }
+
+.ngnx-xo-filter-project-container {
+  width: 300px;
+  position: fixed !important;
+  z-index: 1000;
+  height: calc(100% - 60px);
+  top: 60px;
+  right: 0;
+  overflow: auto;
+  transition: transform .5s ease;
+  box-shadow: 0 10px 10px #d0d2d3;
+  background: var(--ngnx-color-application-surface-0, #fff);
+  /* start off-canvas */
+  transform: translateX(100%);
+}
 .ngnx-xo-create-project-container.is-open {
+  transform: translateX(0);
+}
+.ngnx-xo-filter-project-container.is-open {
   transform: translateX(0);
 }
 
@@ -547,6 +565,15 @@ code {
   align-items: center;
   justify-content: space-between;
   min-width: 400px;
+  z-index: 3;
+  flex-shrink: 0;
+}
+.ngnx-filter-side-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 300px;
   z-index: 3;
   flex-shrink: 0;
 }
@@ -670,7 +697,12 @@ code {
   width: 100%;
   overflow: hidden;
 }
-
+.ngnx-side-filter-panel-body {
+  background-color: #fafafa;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
 /* Form labels */
 .ngnx-form-field__label {
   font-family: var(--font-family-open-sans);
