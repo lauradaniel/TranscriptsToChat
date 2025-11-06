@@ -707,7 +707,7 @@ code {
 .ngnx-form-field__label {
   font-family: var(--font-family-open-sans);
   font-weight: var(--font-weight-semibold);
-  color: var(--ngnx-color-application-font-900);
+  color: #526B7A;
   display: block;
   margin: 0 0 2px 0;
   text-transform: uppercase;
@@ -751,7 +751,10 @@ code {
 }
 
 .ngnx-input-text--small-form-size {
-  height: 28px;
+  height: 100%;
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid #DAE1E6;
 }
 
 /* Description textarea size */
@@ -1753,6 +1756,8 @@ code {
 .filter-multiselect-container {
   position: relative;
   margin-bottom: 8px;
+  width: 216px;
+  height: 30px;
 }
 
 /* Filter dropdown */
@@ -1851,9 +1856,20 @@ code {
 .filter-toggle-switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
   flex-shrink: 0;
+  height: 16px;
+  width: 32px;
+  border-radius: 20px;
+  border-color: var(--ngnx-color-application-glue-560);
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 1px;
+    opacity: 1;
+    border-width: 1px;
+    border-style: solid;
+    background: transparent;
 }
 
 .filter-toggle-switch input {
@@ -1864,35 +1880,39 @@ code {
 
 .filter-toggle-slider {
   position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
+  content: "";
+  top: 1px;
+  left: 1px;
   right: 0;
-  bottom: 0;
-  background-color: var(--ngnx-color-application-glue-200);
+  bottom: 1px;
+  background-color: var(--ngnx-color-application-glue-560);
   transition: 0.3s;
-  border-radius: 24px;
+  border-radius: 50%; 
+  height: 12px;
+  width: 12px;
 }
 
 .filter-toggle-slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
+  height: 12px;
+  width: 12px;
+  left: 1px;
+  bottom: 1px;
+  /*background-color: #dfdfdf;*/
   transition: 0.3s;
   border-radius: 50%;
+
 }
 
 input:checked + .filter-toggle-slider {
   background-color: var(--ngnx-color-branding-primary-700);
+  transform: translateX(15px);
 }
 
-input:checked + .filter-toggle-slider:before {
-  transform: translateX(20px);
-}
+/*input:checked + .filter-toggle-slider:before {
+  
+}*/
 
 .filter-toggle-label {
   font-size: 13px;
