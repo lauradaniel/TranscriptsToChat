@@ -485,8 +485,28 @@ def get_project_summary(project_id):
     """
     Get summarized/aggregated view of conversations grouped by intent and topic
     Returns data formatted for the Chat Summary Table
+
+    Query parameters (optional):
+        categories: Comma-separated list of categories to filter
+        topics: Comma-separated list of topics to filter
+        intents: Comma-separated list of intents to filter
+        agent_tasks: Comma-separated list of agent tasks to filter
+        is_automatable: '1' or 'true' to filter only automatable conversations
     """
     try:
+        # Get filter parameters from query string
+        filter_categories = request.args.get('categories', '').split(',') if request.args.get('categories') else []
+        filter_topics = request.args.get('topics', '').split(',') if request.args.get('topics') else []
+        filter_intents = request.args.get('intents', '').split(',') if request.args.get('intents') else []
+        filter_agent_tasks = request.args.get('agent_tasks', '').split(',') if request.args.get('agent_tasks') else []
+        filter_is_automatable = request.args.get('is_automatable', '').lower() in ['1', 'true']
+
+        # Clean up empty strings from split
+        filter_categories = [c.strip() for c in filter_categories if c.strip()]
+        filter_topics = [t.strip() for t in filter_topics if t.strip()]
+        filter_intents = [i.strip() for i in filter_intents if i.strip()]
+        filter_agent_tasks = [a.strip() for a in filter_agent_tasks if a.strip()]
+
         # Check if project exists
         with TranscriptDatabase(DB_PATH) as local_db:
             project = local_db.get_project(project_id)
@@ -495,16 +515,16 @@ def get_project_summary(project_id):
                     'success': False,
                     'error': 'Project not found'
                 }), 404
-            
+
             # Check if conversations table exists
             table_name = f"conversations_{project_id}"
             cursor = local_db.conn.cursor()
-            
+
             cursor.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='table' AND name=?
             """, (table_name,))
-            
+
             if not cursor.fetchone():
                 return jsonify({
                     'success': True,
@@ -512,24 +532,94 @@ def get_project_summary(project_id):
                     'count': 0,
                     'message': f'No data found for project {project_id}'
                 })
-            
-            # Query to group conversations by intent, topic, category, and agent_task
-            # Return columns: Category, Topic, Intent, Agent_Task, Volume
+
+            # Build WHERE clause for filters
+            where_conditions = []
+            params = []
+
+            # Category filter
+            if filter_categories:
+                category_conditions = []
+                for cat in filter_categories:
+                    if cat == 'Not Specified' or cat == 'Unknown':
+                        category_conditions.append("category IS NULL")
+                    else:
+                        category_conditions.append("category = ?")
+                        params.append(cat)
+                if category_conditions:
+                    where_conditions.append(f"({' OR '.join(category_conditions)})")
+
+            # Topic filter
+            if filter_topics:
+                topic_conditions = []
+                for topic in filter_topics:
+                    if topic == 'Not Specified' or topic == 'Unknown':
+                        topic_conditions.append("topic IS NULL")
+                    else:
+                        topic_conditions.append("topic = ?")
+                        params.append(topic)
+                if topic_conditions:
+                    where_conditions.append(f"({' OR '.join(topic_conditions)})")
+
+            # Intent filter
+            if filter_intents:
+                intent_conditions = []
+                for intent in filter_intents:
+                    if intent == 'Not Specified' or intent == 'Unknown':
+                        intent_conditions.append("intent IS NULL")
+                    else:
+                        intent_conditions.append("intent = ?")
+                        params.append(intent)
+                if intent_conditions:
+                    where_conditions.append(f"({' OR '.join(intent_conditions)})")
+
+            # Agent Task filter
+            if filter_agent_tasks:
+                agent_task_conditions = []
+                for task in filter_agent_tasks:
+                    if task == 'Not Specified' or task == 'Unknown':
+                        agent_task_conditions.append("agent_task IS NULL")
+                    else:
+                        agent_task_conditions.append("agent_task = ?")
+                        params.append(task)
+                if agent_task_conditions:
+                    where_conditions.append(f"({' OR '.join(agent_task_conditions)})")
+
+            # IsAutomatable filter
+            if filter_is_automatable:
+                where_conditions.append("is_automatable = '1'")
+
+            # Build the query with filters
             query = f"""
-                SELECT 
+                SELECT
                     COALESCE(category, 'Not Specified') as Category,
                     COALESCE(topic, 'Not Specified') as Topic,
                     COALESCE(intent, 'Unknown') as Intent,
                     COALESCE(agent_task, 'Not Specified') as Agent_Task,
                     COUNT(DISTINCT interaction_id) as Volume
                 FROM {table_name}
+            """
+
+            if where_conditions:
+                query += " WHERE " + " AND ".join(where_conditions)
+
+            query += """
                 GROUP BY intent, topic, category, agent_task
                 ORDER BY Volume DESC
             """
-            
-            cursor.execute(query)
+
+            print(f"\n🔍 Executing summary query with filters:")
+            print(f"   Categories: {filter_categories}")
+            print(f"   Topics: {filter_topics}")
+            print(f"   Intents: {filter_intents}")
+            print(f"   Agent Tasks: {filter_agent_tasks}")
+            print(f"   Is Automatable: {filter_is_automatable}")
+            print(f"   Query: {query}")
+            print(f"   Params: {params}")
+
+            cursor.execute(query, params)
             rows = cursor.fetchall()
-            
+
             # Format results
             summary_data = []
             for row in rows:
@@ -540,13 +630,13 @@ def get_project_summary(project_id):
                     'Agent_Task': row[3],
                     'Volume': row[4]
                 })
-        
+
         return jsonify({
             'success': True,
             'summary': summary_data,
             'count': len(summary_data)
         })
-    
+
     except Exception as e:
         print(f"❌ ERROR in get_project_summary for project {project_id}:")
         print(f"   Error: {str(e)}")

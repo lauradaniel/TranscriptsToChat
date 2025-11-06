@@ -289,9 +289,60 @@ async function applyFilters() {
 
   console.log('Applying filters:', selectedFilters);
 
-  // TODO: Apply filters to the data table
-  // This will depend on how your main data table is structured
-  // For now, just log the filters
+  // Get current project
+  const projectIdInput = document.getElementById('chatProjectSearch');
+  const projectId = projectIdInput ? projectIdInput.getAttribute('data-selected-id') : null;
+  const projectName = projectIdInput ? projectIdInput.value : '';
+
+  if (!projectId) {
+    alert('Please select a project first');
+    return;
+  }
+
+  // Reload the table with filters
+  await fetchAndDisplayProjectSummary(projectId, projectName, selectedFilters);
+
+  closeFilterPanel();
+}
+
+async function clearAllFilters() {
+  // Reset all filters
+  selectedFilters = {
+    category: [],
+    topic: [],
+    intent: [],
+    agentTask: [],
+    isAutomatable: false
+  };
+
+  // Uncheck all checkboxes
+  document.querySelectorAll('.filter-dropdown-option input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+  });
+
+  // Clear all selected displays
+  ['category', 'topic', 'intent', 'agentTask'].forEach(filterName => {
+    updateSelectedDisplay(filterName);
+  });
+
+  // Uncheck IsAutomatable toggle
+  const isAutomatableToggle = document.getElementById('isAutomatableToggle');
+  if (isAutomatableToggle) {
+    isAutomatableToggle.checked = false;
+  }
+
+  // Get current project
+  const projectIdInput = document.getElementById('chatProjectSearch');
+  const projectId = projectIdInput ? projectIdInput.getAttribute('data-selected-id') : null;
+  const projectName = projectIdInput ? projectIdInput.value : '';
+
+  if (!projectId) {
+    alert('Please select a project first');
+    return;
+  }
+
+  // Reload the table without filters
+  await fetchAndDisplayProjectSummary(projectId, projectName, null);
 
   closeFilterPanel();
 }
@@ -668,10 +719,13 @@ function selectChatProject(projectId, projectName) {
 
 /**
  * Fetches the summarized data for a selected project and calls the table generator.
+ * @param {number} projectId - The project ID
+ * @param {string} projectName - The project name
+ * @param {object} filters - Optional filter object with category, topic, intent, agentTask, isAutomatable
  */
-async function fetchAndDisplayProjectSummary(projectId, projectName) {
+async function fetchAndDisplayProjectSummary(projectId, projectName, filters = null) {
     const landingMain = document.querySelector('.landing-main');
-    
+
     // Remove any existing temporary content (no loading message)
     const tempContent = document.getElementById('temporaryViewContent');
     if (tempContent) {
@@ -679,13 +733,41 @@ async function fetchAndDisplayProjectSummary(projectId, projectName) {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/projects/${projectId}/summary`);
-        
+        // Build query parameters from filters
+        let url = `${API_BASE}/api/projects/${projectId}/summary`;
+
+        if (filters) {
+            const params = new URLSearchParams();
+
+            if (filters.category && filters.category.length > 0) {
+                params.append('categories', filters.category.join(','));
+            }
+            if (filters.topic && filters.topic.length > 0) {
+                params.append('topics', filters.topic.join(','));
+            }
+            if (filters.intent && filters.intent.length > 0) {
+                params.append('intents', filters.intent.join(','));
+            }
+            if (filters.agentTask && filters.agentTask.length > 0) {
+                params.append('agent_tasks', filters.agentTask.join(','));
+            }
+            if (filters.isAutomatable) {
+                params.append('is_automatable', '1');
+            }
+
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+        }
+
+        console.log('Fetching summary with URL:', url);
+        const response = await fetch(url);
+
         if (!response.ok) {
              throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const summaryData = await response.json(); 
+
+        const summaryData = await response.json();
 
         if (summaryData.success && summaryData.summary) {
             // Data is fetched successfully, create the table
@@ -697,15 +779,15 @@ async function fetchAndDisplayProjectSummary(projectId, projectName) {
 
     } catch (error) {
         console.error('Error fetching project summary:', error);
-        
+
         const landingMain = document.querySelector('.landing-main');
-        
+
         // Remove temporary content if it exists
         const tempContent = document.getElementById('temporaryViewContent');
         if (tempContent) {
             tempContent.remove();
         }
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.id = 'temporaryViewContent';
         errorDiv.style.cssText = 'text-align: center; padding: 50px;';
