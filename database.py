@@ -349,13 +349,15 @@ class TranscriptDatabase:
             filters: Dictionary of filters
 
         Returns:
-            List of tuples (interaction_id, json_summary_filepath) - DISTINCT interaction_ids only
+            List of tuples (interaction_id, json_summary_filepath) - one per unique interaction_id
         """
         table_name = f"conversations_{project_id}"
         cursor = self.conn.cursor()
 
+        # Use GROUP BY to get one row per interaction_id (matching COUNT(DISTINCT interaction_id))
+        # Take MIN(json_summary_filepath) to pick one filepath when there are duplicates
         query = f"""
-            SELECT DISTINCT interaction_id, json_summary_filepath
+            SELECT interaction_id, MIN(json_summary_filepath) as json_summary_filepath
             FROM {table_name}
         """
         
@@ -366,10 +368,13 @@ class TranscriptDatabase:
                 if value is not None:
                     conditions.append(f"{column} = ?")
                     params.append(value)
-            
+
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
-        
+
+        # Group by interaction_id to get exactly one row per unique interaction_id
+        query += " GROUP BY interaction_id"
+
         cursor.execute(query, params)
         return cursor.fetchall()
     
