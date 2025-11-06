@@ -336,26 +336,26 @@ class TranscriptDatabase:
         return [dict(row) for row in cursor.fetchall()]
     
     def get_interaction_ids_by_filter(
-        self, 
-        project_id: int, 
+        self,
+        project_id: int,
         filters: Dict
     ) -> List[Tuple[str, str]]:
         """
         Get InteractionIds and JsonSummaryFilePaths for conversations matching filters
         Used for chat context loading
-        
+
         Args:
             project_id: ID of the project
             filters: Dictionary of filters
-            
+
         Returns:
-            List of tuples (interaction_id, json_summary_filepath)
+            List of tuples (interaction_id, json_summary_filepath) - DISTINCT interaction_ids only
         """
         table_name = f"conversations_{project_id}"
         cursor = self.conn.cursor()
-        
+
         query = f"""
-            SELECT interaction_id, json_summary_filepath 
+            SELECT DISTINCT interaction_id, json_summary_filepath
             FROM {table_name}
         """
         

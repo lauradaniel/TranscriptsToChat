@@ -938,12 +938,8 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
     csv_path = data_folder / f"transcripts_{filter_hash}.csv"
 
-    # If CSV already exists, return it
-    if csv_path.exists():
-        print(f"  📁 Using existing CSV: {csv_path}")
-        return str(csv_path)
-
-    print(f"\n📝 Creating CSV file: {csv_path}")
+    # Always create fresh CSV (no caching) to ensure data accuracy
+    print(f"\n📝 Creating fresh CSV file: {csv_path}")
     print(f"  Processing {len(transcript_refs)} transcript files...")
 
     # Prepare CSV data
@@ -1036,14 +1032,14 @@ def prepare_chat_context_from_csv(csv_path, filters):
         sampled_filenames = unique_transcripts
         sampling_note = ""
     elif total_transcripts <= 100:
-        # Medium/Large group: cap at 50 transcripts (tested safe limit)
-        sampled_filenames = unique_transcripts[:50]
-        sampling_note = f"\n(Showing first 50 of {total_transcripts} total transcripts)"
+        # Medium/Large group: cap at 75 transcripts (tested safe limit)
+        sampled_filenames = unique_transcripts[:75]
+        sampling_note = f"\n(Showing first 75 of {total_transcripts} total transcripts)"
     elif total_transcripts <= 300:
-        # Very large datasets: evenly sample 50 transcripts
-        step = total_transcripts // 50
-        sampled_filenames = unique_transcripts[::step][:50]
-        sampling_note = f"\n(Showing representative sample of 50 from {total_transcripts} total transcripts)"
+        # Very large datasets: evenly sample 75 transcripts
+        step = total_transcripts // 75
+        sampled_filenames = unique_transcripts[::step][:75]
+        sampling_note = f"\n(Showing representative sample of 75 from {total_transcripts} total transcripts)"
     else:
         # Massive datasets: stratified sample of 60
         step = total_transcripts // 60
@@ -1073,7 +1069,7 @@ def prepare_chat_context_from_csv(csv_path, filters):
         transcript_rows = sampled_df[sampled_df['Filename'] == filename].sort_values('Line')
 
         # Limit turns per transcript to manage token usage
-        # Set to 120 to safely handle 50 transcripts within 200k token limit
+        # Set to 120 to safely handle 75 transcripts within 200k token limit
         MAX_TURNS_PER_TRANSCRIPT = 120
         if len(transcript_rows) > MAX_TURNS_PER_TRANSCRIPT:
             transcript_rows = transcript_rows.head(MAX_TURNS_PER_TRANSCRIPT)
