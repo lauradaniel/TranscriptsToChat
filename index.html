@@ -57,15 +57,26 @@
             </ul>
         </div>
         
-        <div id="createProjectButtonContainer" class="ngnx-xo-header__title-button"> 
+        <div id="createProjectButtonContainer" class="ngnx-xo-header__title-button">
           <button class="ngnx-button ngnx-button--medium ngnx-button--primary" onclick="openCreateProject()">
             <span class="ngnx-button__content">
               <span class="ngnx-button__label ngnx-button__content-item">Create Project</span>
             </span>
           </button>
         </div>
-        <div id="filterProjectButtonContainer" class="ngnx-xo-header__title-button">       
-          <img src="assets/img/Filter.svg" alt="Filters" height="20" width="20" onclick="openFilterProject()"/>
+
+        <div id="filterProjectButtonContainer" class="ngnx-xo-header__title-button" style="display: none;">
+          <button class="ngnx-button ngnx-button--medium ngnx-button--secondary" onclick="openFilterPanel()" aria-label="Filter">
+            <span class="ngnx-button__content">
+              <span class="ngnx-button__icon ngnx-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true" focusable="false">
+                  <path d="M28 6h-24c-1.104 0-2 0.896-2 2s0.896 2 2 2h24c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+                  <path d="M22 14h-12c-1.104 0-2 0.896-2 2s0.896 2 2 2h12c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+                  <path d="M16 22h-6c-1.104 0-2 0.896-2 2s0.896 2 2 2h6c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+                </svg>
+              </span>
+            </span>
+          </button>
         </div>
       </div>                
       <div class="landing-main">
@@ -161,6 +172,73 @@
         </div>
       </nx-side-panel-body>
       
+    </nx-side-panel>
+  </section>
+
+  <!-- Filter Panel -->
+  <section id="filterPanel" class="ngnx-xo-create-project-container hidden" aria-hidden="true">
+    <nx-side-panel class="ngnx-side-panel ngnx-side-panel--position-right ngnx-side-panel--overlay" role="dialog" aria-modal="true" aria-label="Filter Options">
+      <nx-side-panel-header class="ngnx-side-panel-header ngnx-side-panel-header--position-right ngnx-side-panel-header--size-large">
+        <span class="ngnx-side-panel-header__icon ngnx-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" focusable="false">
+            <path d="M28 6h-24c-1.104 0-2 0.896-2 2s0.896 2 2 2h24c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+            <path d="M22 14h-12c-1.104 0-2 0.896-2 2s0.896 2 2 2h12c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+            <path d="M16 22h-6c-1.104 0-2 0.896-2 2s0.896 2 2 2h6c1.104 0 2-0.896 2-2s-0.896-2-2-2z"></path>
+          </svg>
+        </span>
+        <span class="ngnx-side-panel-header__text">Filter Options</span>
+
+        <button
+          nxghostbutton
+          class="ngnx-side-panel-header__close-button ngnx-ghost-button ngnx-ghost-button--medium ngnx-ghost-button--icon-only"
+          aria-label="Close"
+          onclick="closeFilterPanel()"
+          style="--ngnx-ghost-button-foreground-color: var(--ngnx-color-application-glue-630); --ngnx-ghost-button-selected-background-color: var(--ngnx-color-application-glue-5);">
+          <span class="ngnx-ghost-button__icon ngnx-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+              <path d="M24 14.080l-13.6-13.6c-0.64-0.64-1.76-0.64-2.4 0s-0.64 1.76 0 2.4l12.8 12.8-12.8 13.6c-0.64 0.64-0.64 1.76 0 2.4s1.76 0.64 2.4 0l13.6-14.4c0.48-0.48 0.48-0.96 0.48-1.44 0-0.8-0.16-1.44-0.48-1.76z"/>
+            </svg>
+          </span>
+        </button>
+      </nx-side-panel-header>
+
+      <nx-side-panel-body class="ngnx-side-panel-body ngnx-side-panel-body--header-present">
+        <div class="ngnx-xo-create-project-container__side-panel-body-wrapper ngnx-xo-create-project-container__sidebar">
+          <div class="ngnx-xo-create-project-container__sidebar-padding">
+
+            <p style="color: var(--ngnx-color-application-glue-630); margin-bottom: 24px;">
+              Configure your filter options here. More options coming soon.
+            </p>
+
+            <!-- Placeholder for future filter options -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label" aria-hidden="true">Sample Filter</label>
+              <div class="ngnx-input-text-container ngnx-input-text-container--form-type ngnx-input-text-container--no-icons">
+                <input name="sampleFilter"
+                       class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Enter filter value"
+                       maxlength="80" />
+              </div>
+              <div class="ngnx-form-field__message ngnx-form-field__message--hidden"></div>
+            </nx-form-field>
+
+          </div>
+
+          <div class="ngnx-xo-create-project-container__sidebar-button-bar">
+            <button class="ngnx-footer-button ngnx-button ngnx-button--medium ngnx-button--secondary" onclick="closeFilterPanel()">
+              <span class="ngnx-button__content">
+                <span class="ngnx-button__label ngnx-button__content-item">Cancel</span>
+              </span>
+            </button>
+            <button class="ngnx-footer-button ngnx-button ngnx-button--medium ngnx-button--primary" onclick="applyFilters()">
+              <span class="ngnx-button__content">
+                <span class="ngnx-button__label ngnx-button__content-item">Apply</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </nx-side-panel-body>
+
     </nx-side-panel>
   </section>
 
