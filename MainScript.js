@@ -120,9 +120,58 @@ function closeCreateProject() {
   }, 500);
 }
 
-function openFilterPanel() {
+// Global state for filter values
+let filterValues = {
+  categories: [],
+  topics: [],
+  intents: [],
+  agent_tasks: []
+};
+
+let selectedFilters = {
+  category: [],
+  topic: [],
+  intent: [],
+  agentTask: [],
+  isAutomatable: false
+};
+
+async function openFilterPanel() {
   const panel = document.getElementById('filterPanel');
   if (!panel) return;
+
+  // Get current project ID
+  const projectIdInput = document.getElementById('chatProjectSearch');
+  const projectId = projectIdInput ? projectIdInput.getAttribute('data-selected-id') : null;
+
+  if (!projectId) {
+    alert('Please select a project first');
+    return;
+  }
+
+  // Load filter values from backend
+  try {
+    const response = await fetch(`${API_BASE}/api/projects/${projectId}/filter-values`);
+    const result = await response.json();
+
+    if (result.success) {
+      filterValues = {
+        categories: result.filter_values.categories || [],
+        topics: result.filter_values.topics || [],
+        intents: result.filter_values.intents || [],
+        agent_tasks: result.filter_values.agent_tasks || []
+      };
+
+      // Populate dropdowns
+      populateFilterDropdown('category', filterValues.categories);
+      populateFilterDropdown('topic', filterValues.topics);
+      populateFilterDropdown('intent', filterValues.intents);
+      populateFilterDropdown('agentTask', filterValues.agent_tasks);
+    }
+  } catch (error) {
+    console.error('Error loading filter values:', error);
+  }
+
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
   panel.setAttribute('aria-hidden', 'false');
@@ -138,10 +187,112 @@ function closeFilterPanel() {
   }, 500);
 }
 
-function applyFilters() {
-  // Placeholder function for applying filters
-  console.log('Apply filters clicked');
-  // TODO: Implement filter logic here
+function populateFilterDropdown(filterName, values) {
+  const optionsContainer = document.getElementById(`${filterName}Options`);
+  if (!optionsContainer) return;
+
+  optionsContainer.innerHTML = '';
+
+  values.forEach(value => {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'filter-dropdown-option';
+    optionDiv.setAttribute('data-value', value);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `${filterName}_${value.replace(/\s+/g, '_')}`;
+    checkbox.value = value;
+    checkbox.checked = selectedFilters[filterName].includes(value);
+    checkbox.onchange = () => toggleFilterSelection(filterName, value);
+
+    const label = document.createElement('label');
+    label.htmlFor = checkbox.id;
+    label.textContent = value;
+
+    optionDiv.appendChild(checkbox);
+    optionDiv.appendChild(label);
+    optionsContainer.appendChild(optionDiv);
+  });
+}
+
+function showFilterDropdown(filterName) {
+  const dropdown = document.getElementById(`${filterName}Dropdown`);
+  if (dropdown) {
+    dropdown.classList.remove('hidden');
+  }
+}
+
+function filterDropdownOptions(filterName) {
+  const searchInput = document.getElementById(`${filterName}SearchInput`);
+  const optionsContainer = document.getElementById(`${filterName}Options`);
+
+  if (!searchInput || !optionsContainer) return;
+
+  const searchText = searchInput.value.toLowerCase();
+  const options = optionsContainer.querySelectorAll('.filter-dropdown-option');
+
+  options.forEach(option => {
+    const label = option.querySelector('label');
+    const text = label ? label.textContent.toLowerCase() : '';
+    option.style.display = text.includes(searchText) ? 'flex' : 'none';
+  });
+}
+
+function toggleFilterSelection(filterName, value) {
+  const index = selectedFilters[filterName].indexOf(value);
+
+  if (index > -1) {
+    selectedFilters[filterName].splice(index, 1);
+  } else {
+    selectedFilters[filterName].push(value);
+  }
+
+  updateSelectedDisplay(filterName);
+}
+
+function updateSelectedDisplay(filterName) {
+  const selectedContainer = document.getElementById(`${filterName}Selected`);
+  if (!selectedContainer) return;
+
+  selectedContainer.innerHTML = '';
+
+  selectedFilters[filterName].forEach(value => {
+    const tag = document.createElement('span');
+    tag.className = 'filter-selected-item';
+    tag.innerHTML = `
+      ${value}
+      <span class="filter-selected-item-remove" onclick="removeFilterSelection('${filterName}', '${value.replace(/'/g, "\\'")}')">×</span>
+    `;
+    selectedContainer.appendChild(tag);
+  });
+}
+
+function removeFilterSelection(filterName, value) {
+  const index = selectedFilters[filterName].indexOf(value);
+  if (index > -1) {
+    selectedFilters[filterName].splice(index, 1);
+  }
+
+  // Uncheck the checkbox
+  const checkbox = document.querySelector(`#${filterName}Options input[value="${value}"]`);
+  if (checkbox) {
+    checkbox.checked = false;
+  }
+
+  updateSelectedDisplay(filterName);
+}
+
+async function applyFilters() {
+  // Get IsAutomatable toggle value
+  const isAutomatableToggle = document.getElementById('isAutomatableToggle');
+  selectedFilters.isAutomatable = isAutomatableToggle ? isAutomatableToggle.checked : false;
+
+  console.log('Applying filters:', selectedFilters);
+
+  // TODO: Apply filters to the data table
+  // This will depend on how your main data table is structured
+  // For now, just log the filters
+
   closeFilterPanel();
 }
 
@@ -156,6 +307,23 @@ document.addEventListener('keydown', (e) => {
     if (filterPanel && filterPanel.classList.contains('is-open')) {
       closeFilterPanel();
     }
+
+    // Close any open filter dropdowns
+    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+      dropdown.classList.add('hidden');
+    });
+  }
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  const isSearchInput = e.target.closest('.filter-multiselect-container input');
+  const isDropdownOption = e.target.closest('.filter-dropdown-option');
+
+  if (!isSearchInput && !isDropdownOption) {
+    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+      dropdown.classList.add('hidden');
+    });
   }
 });
 
