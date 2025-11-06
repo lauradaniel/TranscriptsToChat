@@ -555,7 +555,12 @@ function createChatSummaryTable(data, projectName, message = null) {
                 const flexStyle = col && col.isIcon ? 'flex: 0 0 100px;' : 'flex: 1;';
                 // Special handling for AI Chat icon column
                 if (col && col.isIcon) {
-                    return `<td style="${flexStyle} text-align: center; min-width: 0;"><img src="assets/img/bot-builder.svg" alt="Chat" style="width: 24px; height: 24px; cursor: pointer;" onclick="openAIChat('${row.Intent}', '${row.Topic}')"/></td>`;
+                    // Pass all 4 fields to uniquely identify the row
+                    const escIntent = (row.Intent || '').replace(/'/g, "\\'");
+                    const escTopic = (row.Topic || '').replace(/'/g, "\\'");
+                    const escCategory = (row.Category || '').replace(/'/g, "\\'");
+                    const escAgentTask = (row.Agent_Task || '').replace(/'/g, "\\'");
+                    return `<td style="${flexStyle} text-align: center; min-width: 0;"><img src="assets/img/bot-builder.svg" alt="Chat" style="width: 24px; height: 24px; cursor: pointer;" onclick="openAIChat('${escIntent}', '${escTopic}', '${escCategory}', '${escAgentTask}')"/></td>`;
                 }
                 return `<td title="${row[key] || 'N/A'}" style="${flexStyle} min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${row[key] || 'N/A'}</td>`;
             }).join('');
@@ -673,7 +678,12 @@ function updateChatTableBody() {
             
             // Special handling for AI Chat icon column
             if (col && col.isIcon) {
-                return `<td style="${flexStyle} text-align: center; min-width: 0;"><img src="assets/img/bot-builder.svg" alt="Chat" style="width: 24px; height: 24px; cursor: pointer;" onclick="openAIChat('${row.Intent}', '${row.Topic}')"/></td>`;
+                // Pass all 4 fields to uniquely identify the row
+                const escIntent = (row.Intent || '').replace(/'/g, "\\'");
+                const escTopic = (row.Topic || '').replace(/'/g, "\\'");
+                const escCategory = (row.Category || '').replace(/'/g, "\\'");
+                const escAgentTask = (row.Agent_Task || '').replace(/'/g, "\\'");
+                return `<td style="${flexStyle} text-align: center; min-width: 0;"><img src="assets/img/bot-builder.svg" alt="Chat" style="width: 24px; height: 24px; cursor: pointer;" onclick="openAIChat('${escIntent}', '${escTopic}', '${escCategory}', '${escAgentTask}')"/></td>`;
             }
             return `<td title="${row[key] || 'N/A'}" style="${flexStyle} min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${row[key] || 'N/A'}</td>`;
         }).join('');
@@ -776,8 +786,8 @@ let currentChatContext = {
     conversationHistory: []
 };
 
-async function openAIChat(intent, topic) {
-    console.log('Opening AI Chat for:', { intent, topic });
+async function openAIChat(intent, topic, category, agentTask) {
+    console.log('Opening AI Chat for:', { intent, topic, category, agentTask });
 
     // Get the selected project ID from the dropdown
     const projectIdInput = document.getElementById('chatProjectSearch');
@@ -788,9 +798,12 @@ async function openAIChat(intent, topic) {
         return;
     }
 
-    // Get the full row data to extract Category and Agent_Task
+    // Get the exact row data by matching ALL 4 fields to uniquely identify the row
     const rows = currentChatData.filter(row =>
-        row.Intent === intent && row.Topic === topic
+        row.Intent === intent &&
+        row.Topic === topic &&
+        row.Category === category &&
+        row.Agent_Task === agentTask
     );
 
     if (rows.length === 0) {
