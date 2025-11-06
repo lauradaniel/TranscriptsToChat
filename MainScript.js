@@ -136,6 +136,21 @@ let selectedFilters = {
   isAutomatable: false
 };
 
+// Global state for column visibility
+const availableColumns = [
+  { key: 'Category', label: 'Category' },
+  { key: 'Topic', label: 'Topic' },
+  { key: 'Intent', label: 'Intent' },
+  { key: 'Agent_Task', label: 'Agent Task' }
+];
+
+let visibleColumns = {
+  Category: true,
+  Topic: true,
+  Intent: true,
+  Agent_Task: true
+};
+
 async function openFilterPanel() {
   const panel = document.getElementById('filterPanel');
   if (!panel) return;
@@ -171,6 +186,9 @@ async function openFilterPanel() {
   } catch (error) {
     console.error('Error loading filter values:', error);
   }
+
+  // Populate column visibility dropdown
+  populateColumnVisibilityDropdown();
 
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
@@ -280,6 +298,100 @@ function removeFilterSelection(filterName, value) {
   }
 
   updateSelectedDisplay(filterName);
+}
+
+// ============ COLUMN VISIBILITY FUNCTIONS ============
+
+function populateColumnVisibilityDropdown() {
+  const optionsContainer = document.getElementById('columnVisibilityOptions');
+  if (!optionsContainer) return;
+
+  optionsContainer.innerHTML = '';
+
+  availableColumns.forEach(column => {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'filter-dropdown-option';
+    optionDiv.setAttribute('data-value', column.key);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `colVis_${column.key}`;
+    checkbox.value = column.key;
+    checkbox.checked = visibleColumns[column.key];
+    checkbox.onchange = () => toggleColumnVisibility(column.key);
+
+    const label = document.createElement('label');
+    label.htmlFor = checkbox.id;
+    label.textContent = column.label;
+
+    optionDiv.appendChild(checkbox);
+    optionDiv.appendChild(label);
+    optionsContainer.appendChild(optionDiv);
+  });
+
+  updateColumnVisibilityDisplay();
+}
+
+function showColumnVisibilityDropdown() {
+  const dropdown = document.getElementById('columnVisibilityDropdown');
+  if (dropdown) {
+    dropdown.classList.remove('hidden');
+  }
+}
+
+function filterColumnVisibilityOptions() {
+  const searchInput = document.getElementById('columnVisibilitySearchInput');
+  const optionsContainer = document.getElementById('columnVisibilityOptions');
+
+  if (!searchInput || !optionsContainer) return;
+
+  const searchText = searchInput.value.toLowerCase();
+  const options = optionsContainer.querySelectorAll('.filter-dropdown-option');
+
+  options.forEach(option => {
+    const label = option.querySelector('label');
+    const text = label ? label.textContent.toLowerCase() : '';
+    option.style.display = text.includes(searchText) ? 'flex' : 'none';
+  });
+}
+
+function toggleColumnVisibility(columnKey) {
+  visibleColumns[columnKey] = !visibleColumns[columnKey];
+  updateColumnVisibilityDisplay();
+}
+
+function updateColumnVisibilityDisplay() {
+  const selectedContainer = document.getElementById('columnVisibilitySelected');
+  if (!selectedContainer) return;
+
+  selectedContainer.innerHTML = '';
+
+  Object.keys(visibleColumns).forEach(key => {
+    if (visibleColumns[key]) {
+      const column = availableColumns.find(c => c.key === key);
+      if (column) {
+        const tag = document.createElement('span');
+        tag.className = 'filter-selected-item';
+        tag.innerHTML = `
+          ${column.label}
+          <span class="filter-selected-item-remove" onclick="removeColumnVisibility('${key}')">×</span>
+        `;
+        selectedContainer.appendChild(tag);
+      }
+    }
+  });
+}
+
+function removeColumnVisibility(columnKey) {
+  visibleColumns[columnKey] = false;
+
+  // Uncheck the checkbox
+  const checkbox = document.getElementById(`colVis_${columnKey}`);
+  if (checkbox) {
+    checkbox.checked = false;
+  }
+
+  updateColumnVisibilityDisplay();
 }
 
 async function applyFilters() {
@@ -808,9 +920,9 @@ function createChatSummaryTable(data, projectName, message = null) {
     currentChatData = data; // Store data globally for sorting
     currentSortColumn = 'Volume';
     currentSortDirection = 'desc';
-    
-    // Define the columns: Category, Topic, Intent, Agent Task, Volume, AI Chat
-    const columnDefinitions = [
+
+    // Define all possible columns
+    const allColumnDefinitions = [
         { key: 'Category', label: 'Category', sortable: true },
         { key: 'Topic', label: 'Topic', sortable: true },
         { key: 'Intent', label: 'Intent', sortable: true },
@@ -818,7 +930,15 @@ function createChatSummaryTable(data, projectName, message = null) {
         { key: 'Volume', label: 'Volume', sortable: true, type: 'number' },
         { key: 'AI_Chat', label: 'AI Chat', sortable: false, isIcon: true }
     ];
-    
+
+    // Filter columns based on visibility settings (always show Volume and AI_Chat)
+    const columnDefinitions = allColumnDefinitions.filter(col => {
+        if (col.key === 'Volume' || col.key === 'AI_Chat') {
+            return true; // Always show Volume and AI Chat
+        }
+        return visibleColumns[col.key] !== false;
+    });
+
     const generateTableHTML = (data, columns, headerKeys) => {
         const keys = headerKeys || columns.map(c => c.key);
         
