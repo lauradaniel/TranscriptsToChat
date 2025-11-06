@@ -888,7 +888,7 @@ async function openAIChat(intent, topic, category, agentTask) {
                             Agent Task: ${rowData.Agent_Task}
                         </p>
                         <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
-                            🔍 Verify File Access
+                             Verify File Access
                         </button>
                     </div>
                 </div>
