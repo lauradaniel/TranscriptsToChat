@@ -1105,15 +1105,23 @@ async function openAIChat(intent, topic, category, agentTask) {
 
     const rowData = rows[0];
 
+    // Build filters combining the row's specific values AND any active global filters
+    const chatFilters = {
+        intent: rowData.Intent,
+        topic: rowData.Topic,
+        category: rowData.Category,
+        agent_task: rowData.Agent_Task
+    };
+
+    // Include IsAutomatable filter if it was applied to the table
+    if (selectedFilters && selectedFilters.isAutomatable) {
+        chatFilters.is_automatable = '1';
+    }
+
     // Store chat context
     currentChatContext = {
         projectId: projectId,
-        filters: {
-            intent: rowData.Intent,
-            topic: rowData.Topic,
-            category: rowData.Category,
-            agent_task: rowData.Agent_Task
-        },
+        filters: chatFilters,
         conversationHistory: []
     };
 
