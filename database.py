@@ -360,14 +360,21 @@ class TranscriptDatabase:
             SELECT interaction_id, MIN(json_summary_filepath) as json_summary_filepath
             FROM {table_name}
         """
-        
+
         params = []
         if filters:
             conditions = []
             for column, value in filters.items():
                 if value is not None:
-                    conditions.append(f"{column} = ?")
-                    params.append(value)
+                    # Convert display values back to NULL to match database
+                    # The summary query uses COALESCE to convert NULL → 'Not Specified'/'Unknown'
+                    # So we need to convert back when filtering
+                    if value == 'Not Specified' or value == 'Unknown':
+                        # Match NULL values in database
+                        conditions.append(f"{column} IS NULL")
+                    else:
+                        conditions.append(f"{column} = ?")
+                        params.append(value)
 
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
