@@ -220,6 +220,7 @@
                        placeholder="Search categories..."
                        onkeyup="filterDropdownOptions('category')"
                        onfocus="showFilterDropdown('category')" />
+                <img id="chatDropdownArrow" src="assets/img/arrow-down.svg" alt="Dropdown Arrow" class="dropdown-arrow-icon"  style= "height: 15px; width: 15px";/>       
                 <div id="categoryDropdown" class="filter-dropdown hidden">
                   <div class="filter-dropdown-options" id="categoryOptions">
                     <!-- Populated by JavaScript -->
@@ -239,6 +240,7 @@
                        placeholder="Search topics..."
                        onkeyup="filterDropdownOptions('topic')"
                        onfocus="showFilterDropdown('topic')" />
+                       <img id="chatDropdownArrow" src="assets/img/arrow-down.svg" alt="Dropdown Arrow" class="dropdown-arrow-icon"  style= "height: 15px; width: 15px";/>         
                 <div id="topicDropdown" class="filter-dropdown hidden">
                   <div class="filter-dropdown-options" id="topicOptions">
                     <!-- Populated by JavaScript -->
@@ -258,6 +260,7 @@
                        placeholder="Search intents..."
                        onkeyup="filterDropdownOptions('intent')"
                        onfocus="showFilterDropdown('intent')" />
+                       <img id="chatDropdownArrow" src="assets/img/arrow-down.svg" alt="Dropdown Arrow" class="dropdown-arrow-icon"  style= "height: 15px; width: 15px";/>         
                 <div id="intentDropdown" class="filter-dropdown hidden">
                   <div class="filter-dropdown-options" id="intentOptions">
                     <!-- Populated by JavaScript -->
@@ -277,6 +280,7 @@
                        placeholder="Search agent tasks..."
                        onkeyup="filterDropdownOptions('agentTask')"
                        onfocus="showFilterDropdown('agentTask')" />
+                       <img id="chatDropdownArrow" src="assets/img/arrow-down.svg" alt="Dropdown Arrow" class="dropdown-arrow-icon"  style= "height: 15px; width: 15px";/>         
                 <div id="agentTaskDropdown" class="filter-dropdown hidden">
                   <div class="filter-dropdown-options" id="agentTaskOptions">
                     <!-- Populated by JavaScript -->
@@ -288,13 +292,14 @@
 
             <!-- IsAutomatable Toggle -->
             <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
-              <label class="ngnx-form-field__label">Automatable Only</label>
+             
               <div class="filter-toggle-container">
+                <span class="ngnx-form-field__label">Automatable Only</span>
                 <label class="filter-toggle-switch">
                   <input type="checkbox" id="isAutomatableToggle" />
                   <span class="filter-toggle-slider"></span>
                 </label>
-                <span class="filter-toggle-label">Show only automatable transcripts</span>
+                
               </div>
             </nx-form-field>
 
