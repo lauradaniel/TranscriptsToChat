@@ -328,8 +328,6 @@ function populateColumnVisibilityDropdown() {
     optionDiv.appendChild(label);
     optionsContainer.appendChild(optionDiv);
   });
-
-  updateColumnVisibilityDisplay();
 }
 
 function showColumnVisibilityDropdown() {
@@ -357,41 +355,41 @@ function filterColumnVisibilityOptions() {
 
 function toggleColumnVisibility(columnKey) {
   visibleColumns[columnKey] = !visibleColumns[columnKey];
-  updateColumnVisibilityDisplay();
 }
 
-function updateColumnVisibilityDisplay() {
-  const selectedContainer = document.getElementById('columnVisibilitySelected');
-  if (!selectedContainer) return;
+/**
+ * Aggregates data based on visible columns only.
+ * Rows that differ only in hidden columns will be merged with Volume summed.
+ */
+function aggregateDataByVisibleColumns(data, visibleCols) {
+  if (!data || data.length === 0) return data;
 
-  selectedContainer.innerHTML = '';
+  // Get list of visible column keys (excluding Volume and AI_Chat)
+  const visibleKeys = ['Category', 'Topic', 'Intent', 'Agent_Task']
+    .filter(key => visibleCols[key] !== false);
 
-  Object.keys(visibleColumns).forEach(key => {
-    if (visibleColumns[key]) {
-      const column = availableColumns.find(c => c.key === key);
-      if (column) {
-        const tag = document.createElement('span');
-        tag.className = 'filter-selected-item';
-        tag.innerHTML = `
-          ${column.label}
-          <span class="filter-selected-item-remove" onclick="removeColumnVisibility('${key}')">×</span>
-        `;
-        selectedContainer.appendChild(tag);
-      }
+  // Group rows by visible columns
+  const grouped = {};
+
+  data.forEach(row => {
+    // Create a unique key based on visible columns only
+    const keyParts = visibleKeys.map(key => row[key] || 'N/A');
+    const groupKey = keyParts.join('|');
+
+    if (!grouped[groupKey]) {
+      // Initialize new group with first row's data
+      grouped[groupKey] = { ...row, Volume: 0 };
+      // For hidden columns, set to first value encountered
+      visibleKeys.forEach(key => {
+        grouped[groupKey][key] = row[key];
+      });
     }
+
+    // Sum the Volume
+    grouped[groupKey].Volume += row.Volume;
   });
-}
 
-function removeColumnVisibility(columnKey) {
-  visibleColumns[columnKey] = false;
-
-  // Uncheck the checkbox
-  const checkbox = document.getElementById(`colVis_${columnKey}`);
-  if (checkbox) {
-    checkbox.checked = false;
-  }
-
-  updateColumnVisibilityDisplay();
+  return Object.values(grouped);
 }
 
 async function applyFilters() {
@@ -917,7 +915,11 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
  */
 function createChatSummaryTable(data, projectName, message = null) {
     const landingMain = document.querySelector('.landing-main');
-    currentChatData = data; // Store data globally for sorting
+
+    // Aggregate data based on visible columns
+    const aggregatedData = aggregateDataByVisibleColumns(data, visibleColumns);
+
+    currentChatData = aggregatedData; // Store aggregated data globally for sorting
     currentSortColumn = 'Volume';
     currentSortDirection = 'desc';
 
@@ -990,10 +992,10 @@ function createChatSummaryTable(data, projectName, message = null) {
             </div>
         `;
     };
-    
-    // 1. Sort initial data by Volume DESC
-    data.sort((a, b) => b.Volume - a.Volume);
-    
+
+    // 1. Sort aggregated data by Volume DESC
+    aggregatedData.sort((a, b) => b.Volume - a.Volume);
+
     // 2. Remove any existing temporary content
     const tempContent = document.getElementById('temporaryViewContent');
     if (tempContent) {
@@ -1006,13 +1008,13 @@ function createChatSummaryTable(data, projectName, message = null) {
     contentDiv.style.cssText = 'width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column;';
     contentDiv.innerHTML = `
         <div class="chat-summary-table-container" style="width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column;">
-            ${generateTableHTML(data, columnDefinitions)}
+            ${generateTableHTML(aggregatedData, columnDefinitions)}
         </div>
     `;
     landingMain.appendChild(contentDiv);
-    
+
     // 4. Attach drag/drop handlers
-    if (data.length > 0) {
+    if (aggregatedData.length > 0) {
         attachChatTableDragDropHandlers();
     }
 }
