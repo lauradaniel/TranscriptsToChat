@@ -938,12 +938,8 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
     csv_path = data_folder / f"transcripts_{filter_hash}.csv"
 
-    # If CSV already exists, return it
-    if csv_path.exists():
-        print(f"  📁 Using existing CSV: {csv_path}")
-        return str(csv_path)
-
-    print(f"\n📝 Creating CSV file: {csv_path}")
+    # Always create fresh CSV (no caching) to ensure data accuracy
+    print(f"\n📝 Creating fresh CSV file: {csv_path}")
     print(f"  Processing {len(transcript_refs)} transcript files...")
 
     # Prepare CSV data
