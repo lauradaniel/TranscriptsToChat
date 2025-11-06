@@ -1228,12 +1228,21 @@ async function openAIChat(intent, topic, category, agentTask) {
     const rowData = rows[0];
 
     // Build filters combining the row's specific values AND any active global filters
-    const chatFilters = {
-        intent: rowData.Intent,
-        topic: rowData.Topic,
-        category: rowData.Category,
-        agent_task: rowData.Agent_Task
-    };
+    // IMPORTANT: Only include filters for VISIBLE columns
+    const chatFilters = {};
+
+    if (visibleColumns.Category !== false) {
+        chatFilters.category = rowData.Category;
+    }
+    if (visibleColumns.Topic !== false) {
+        chatFilters.topic = rowData.Topic;
+    }
+    if (visibleColumns.Intent !== false) {
+        chatFilters.intent = rowData.Intent;
+    }
+    if (visibleColumns.Agent_Task !== false) {
+        chatFilters.agent_task = rowData.Agent_Task;
+    }
 
     // Include IsAutomatable filter if it was applied to the table
     if (selectedFilters && selectedFilters.isAutomatable) {
@@ -1247,10 +1256,23 @@ async function openAIChat(intent, topic, category, agentTask) {
         conversationHistory: []
     };
 
-    // Update subtitle with context info
+    // Update subtitle with context info - only show visible columns
     const subtitle = document.getElementById('aiChatSubtitle');
     if (subtitle) {
-        subtitle.textContent = `${rowData.Category} > ${rowData.Topic} > ${rowData.Intent} (${rowData.Volume} transcripts)`;
+        const subtitleParts = [];
+        if (visibleColumns.Category !== false) {
+            subtitleParts.push(rowData.Category);
+        }
+        if (visibleColumns.Topic !== false) {
+            subtitleParts.push(rowData.Topic);
+        }
+        if (visibleColumns.Intent !== false) {
+            subtitleParts.push(rowData.Intent);
+        }
+        if (visibleColumns.Agent_Task !== false) {
+            subtitleParts.push(rowData.Agent_Task);
+        }
+        subtitle.textContent = `${subtitleParts.join(' > ')} (${rowData.Volume} transcripts)`;
     }
 
     // Show modal with loading indicator
@@ -1298,16 +1320,30 @@ async function openAIChat(intent, topic, category, agentTask) {
 
         // Now show the ready message
         if (messagesContainer) {
+            // Build context info HTML - only show visible columns
+            let contextInfo = '';
+            if (visibleColumns.Category !== false) {
+                contextInfo += `Category: ${rowData.Category}<br>`;
+            }
+            if (visibleColumns.Topic !== false) {
+                contextInfo += `Topic: ${rowData.Topic}<br>`;
+            }
+            if (visibleColumns.Intent !== false) {
+                contextInfo += `Intent: ${rowData.Intent}<br>`;
+            }
+            if (visibleColumns.Agent_Task !== false) {
+                contextInfo += `Agent Task: ${rowData.Agent_Task}<br>`;
+            }
+            // Remove trailing <br>
+            contextInfo = contextInfo.replace(/<br>$/, '');
+
             messagesContainer.innerHTML = `
                 <div class="ai-chat-message ai-chat-message-system">
                     <div class="ai-chat-message-content">
                         <p><strong>✅ Chat session ready!</strong></p>
                         <p>Ask questions about the ${prepareResult.transcript_count} transcripts in this group.</p>
                         <p class="ai-chat-context-info">
-                            Category: ${rowData.Category}<br>
-                            Topic: ${rowData.Topic}<br>
-                            Intent: ${rowData.Intent}<br>
-                            Agent Task: ${rowData.Agent_Task}
+                            ${contextInfo}
                         </p>
                         <button class="ai-chat-verify-btn" onclick="verifyTranscriptFiles()">
                              Verify File Access
