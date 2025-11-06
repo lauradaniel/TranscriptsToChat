@@ -1313,6 +1313,74 @@ def prepare_chat(project_id):
         }), 500
 
 
+@app.route('/api/projects/<int:project_id>/filter-values', methods=['GET'])
+def get_filter_values(project_id):
+    """
+    Get unique values for all filter fields in a project.
+    Used to populate multi-select dropdowns in the filter panel.
+
+    Returns:
+    {
+        "success": true,
+        "filter_values": {
+            "categories": ["BILLING", "TECHNICAL", ...],
+            "topics": ["Payment", "Account", ...],
+            "intents": ["Making Payment", "Billing Question", ...],
+            "agent_tasks": ["Copay Was Discussed", "Process Refund", ...]
+        }
+    }
+    """
+    try:
+        with TranscriptDatabase(DB_PATH) as local_db:
+            table_name = f"conversations_{project_id}"
+            cursor = local_db.conn.cursor()
+
+            # Get unique values for each filter field
+            query = f"""
+                SELECT DISTINCT
+                    COALESCE(category, 'Not Specified') as category,
+                    COALESCE(topic, 'Not Specified') as topic,
+                    COALESCE(intent, 'Unknown') as intent,
+                    COALESCE(agent_task, 'Not Specified') as agent_task
+                FROM {table_name}
+                ORDER BY category, topic, intent, agent_task
+            """
+
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            # Collect unique values for each field
+            categories = set()
+            topics = set()
+            intents = set()
+            agent_tasks = set()
+
+            for row in rows:
+                categories.add(row[0])
+                topics.add(row[1])
+                intents.add(row[2])
+                agent_tasks.add(row[3])
+
+            return jsonify({
+                'success': True,
+                'filter_values': {
+                    'categories': sorted(list(categories)),
+                    'topics': sorted(list(topics)),
+                    'intents': sorted(list(intents)),
+                    'agent_tasks': sorted(list(agent_tasks))
+                }
+            })
+
+    except Exception as e:
+        print(f"Get filter values error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/api/projects/<int:project_id>/chat/query', methods=['POST'])
 def chat_query(project_id):
     """

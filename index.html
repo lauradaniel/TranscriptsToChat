@@ -206,20 +206,96 @@
         <div class="ngnx-xo-create-project-container__side-panel-body-wrapper ngnx-xo-create-project-container__sidebar">
           <div class="ngnx-xo-create-project-container__sidebar-padding">
 
-            <p style="color: var(--ngnx-color-application-glue-630); margin-bottom: 24px;">
+            <p style="color: var(--ngnx-color-application-glue-630); margin-bottom: 24px; font-weight: 600;">
               Filters
             </p>
 
-            <!-- Placeholder for future filter options -->
+            <!-- Category Multi-Select -->
             <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
-              <label class="ngnx-form-field__label" aria-hidden="true">Sample Filter</label>
-              <div class="ngnx-input-text-container ngnx-input-text-container--form-type ngnx-input-text-container--no-icons">
-                <input name="sampleFilter"
+              <label class="ngnx-form-field__label">Category</label>
+              <div class="filter-multiselect-container">
+                <input type="text"
+                       id="categorySearchInput"
                        class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
-                       placeholder="Enter filter value"
-                       maxlength="80" />
+                       placeholder="Search categories..."
+                       onkeyup="filterDropdownOptions('category')"
+                       onfocus="showFilterDropdown('category')" />
+                <div id="categoryDropdown" class="filter-dropdown hidden">
+                  <div class="filter-dropdown-options" id="categoryOptions">
+                    <!-- Populated by JavaScript -->
+                  </div>
+                </div>
+                <div class="filter-selected-items" id="categorySelected"></div>
               </div>
-              <div class="ngnx-form-field__message ngnx-form-field__message--hidden"></div>
+            </nx-form-field>
+
+            <!-- Topic Multi-Select -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label">Topic</label>
+              <div class="filter-multiselect-container">
+                <input type="text"
+                       id="topicSearchInput"
+                       class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Search topics..."
+                       onkeyup="filterDropdownOptions('topic')"
+                       onfocus="showFilterDropdown('topic')" />
+                <div id="topicDropdown" class="filter-dropdown hidden">
+                  <div class="filter-dropdown-options" id="topicOptions">
+                    <!-- Populated by JavaScript -->
+                  </div>
+                </div>
+                <div class="filter-selected-items" id="topicSelected"></div>
+              </div>
+            </nx-form-field>
+
+            <!-- Intent Multi-Select -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label">Intent</label>
+              <div class="filter-multiselect-container">
+                <input type="text"
+                       id="intentSearchInput"
+                       class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Search intents..."
+                       onkeyup="filterDropdownOptions('intent')"
+                       onfocus="showFilterDropdown('intent')" />
+                <div id="intentDropdown" class="filter-dropdown hidden">
+                  <div class="filter-dropdown-options" id="intentOptions">
+                    <!-- Populated by JavaScript -->
+                  </div>
+                </div>
+                <div class="filter-selected-items" id="intentSelected"></div>
+              </div>
+            </nx-form-field>
+
+            <!-- Agent Task Multi-Select -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label">Agent Task</label>
+              <div class="filter-multiselect-container">
+                <input type="text"
+                       id="agentTaskSearchInput"
+                       class="ngnx-input-text ngnx-xo-input-text ngnx-input-text--form-type ngnx-input-text--small-form-size"
+                       placeholder="Search agent tasks..."
+                       onkeyup="filterDropdownOptions('agentTask')"
+                       onfocus="showFilterDropdown('agentTask')" />
+                <div id="agentTaskDropdown" class="filter-dropdown hidden">
+                  <div class="filter-dropdown-options" id="agentTaskOptions">
+                    <!-- Populated by JavaScript -->
+                  </div>
+                </div>
+                <div class="filter-selected-items" id="agentTaskSelected"></div>
+              </div>
+            </nx-form-field>
+
+            <!-- IsAutomatable Toggle -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
+              <label class="ngnx-form-field__label">Automatable Only</label>
+              <div class="filter-toggle-container">
+                <label class="filter-toggle-switch">
+                  <input type="checkbox" id="isAutomatableToggle" />
+                  <span class="filter-toggle-slider"></span>
+                </label>
+                <span class="filter-toggle-label">Show only automatable transcripts</span>
+              </div>
             </nx-form-field>
 
           </div>
