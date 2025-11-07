@@ -1228,20 +1228,36 @@ async function openAIChat(intent, topic, category, agentTask) {
     const rowData = rows[0];
 
     // Build filters combining the row's specific values AND any active global filters
-    // IMPORTANT: Only include filters for VISIBLE columns
+    // For VISIBLE columns: use the specific row's values
+    // For HIDDEN columns: use the original multi-select filters from filter panel
     const chatFilters = {};
 
+    // Category filter
     if (visibleColumns.Category !== false) {
         chatFilters.category = rowData.Category;
+    } else if (selectedFilters && selectedFilters.category && selectedFilters.category.length > 0) {
+        chatFilters.categories = selectedFilters.category.join(',');
     }
+
+    // Topic filter
     if (visibleColumns.Topic !== false) {
         chatFilters.topic = rowData.Topic;
+    } else if (selectedFilters && selectedFilters.topic && selectedFilters.topic.length > 0) {
+        chatFilters.topics = selectedFilters.topic.join(',');
     }
+
+    // Intent filter
     if (visibleColumns.Intent !== false) {
         chatFilters.intent = rowData.Intent;
+    } else if (selectedFilters && selectedFilters.intent && selectedFilters.intent.length > 0) {
+        chatFilters.intents = selectedFilters.intent.join(',');
     }
+
+    // Agent Task filter
     if (visibleColumns.Agent_Task !== false) {
         chatFilters.agent_task = rowData.Agent_Task;
+    } else if (selectedFilters && selectedFilters.agentTask && selectedFilters.agentTask.length > 0) {
+        chatFilters.agent_tasks = selectedFilters.agentTask.join(',');
     }
 
     // Include IsAutomatable filter if it was applied to the table
