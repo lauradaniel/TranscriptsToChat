@@ -133,8 +133,13 @@ let selectedFilters = {
   topic: [],
   intent: [],
   agentTask: [],
-  isAutomatable: false
+  isAutomatable: false,
+  sentimentMin: null,
+  sentimentMax: null
 };
+
+// Global sentiment slider instance
+let sentimentSlider = null;
 
 // Global state for column visibility
 const availableColumns = [
@@ -189,6 +194,9 @@ async function openFilterPanel() {
 
   // Populate column visibility dropdown
   populateColumnVisibilityDropdown();
+
+  // Initialize sentiment slider
+  initializeSentimentSlider(projectId);
 
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
@@ -358,6 +366,99 @@ function toggleColumnVisibility(columnKey) {
 }
 
 /**
+ * Initialize the sentiment score slider with min/max values from backend
+ */
+async function initializeSentimentSlider(projectId) {
+  const sliderElement = document.getElementById('sentimentSlider');
+  const minInput = document.getElementById('minSentiment');
+  const maxInput = document.getElementById('maxSentiment');
+
+  if (!sliderElement || !minInput || !maxInput) return;
+
+  try {
+    // Fetch sentiment range from backend
+    const response = await fetch(`${API_BASE}/api/projects/${projectId}/sentiment-range`);
+    const result = await response.json();
+
+    if (result.success) {
+      const min = result.min_sentiment || 1.0;
+      const max = result.max_sentiment || 5.0;
+
+      // Destroy existing slider if it exists
+      if (sentimentSlider) {
+        sentimentSlider.destroy();
+      }
+
+      // Create the slider
+      sentimentSlider = noUiSlider.create(sliderElement, {
+        start: [min, max],
+        connect: true,
+        range: {
+          'min': min,
+          'max': max
+        },
+        step: 0.01,
+        tooltips: [
+          { to: (value) => value.toFixed(2) },
+          { to: (value) => value.toFixed(2) }
+        ],
+        pips: {
+          mode: 'positions',
+          values: [0, 50, 100],
+          density: 4,
+          format: {
+            to: (value) => value.toFixed(2)
+          }
+        }
+      });
+
+      // Update inputs when slider changes
+      sentimentSlider.on('update', (values) => {
+        minInput.value = parseFloat(values[0]).toFixed(2);
+        maxInput.value = parseFloat(values[1]).toFixed(2);
+        selectedFilters.sentimentMin = parseFloat(values[0]);
+        selectedFilters.sentimentMax = parseFloat(values[1]);
+      });
+
+    }
+  } catch (error) {
+    console.error('Error initializing sentiment slider:', error);
+    // Fallback to default range
+    if (sentimentSlider) {
+      sentimentSlider.destroy();
+    }
+    sentimentSlider = noUiSlider.create(sliderElement, {
+      start: [1.0, 5.0],
+      connect: true,
+      range: {
+        'min': 1.0,
+        'max': 5.0
+      },
+      step: 0.01,
+      tooltips: [
+        { to: (value) => value.toFixed(2) },
+        { to: (value) => value.toFixed(2) }
+      ],
+      pips: {
+        mode: 'positions',
+        values: [0, 50, 100],
+        density: 4,
+        format: {
+          to: (value) => value.toFixed(2)
+        }
+      }
+    });
+
+    sentimentSlider.on('update', (values) => {
+      minInput.value = parseFloat(values[0]).toFixed(2);
+      maxInput.value = parseFloat(values[1]).toFixed(2);
+      selectedFilters.sentimentMin = parseFloat(values[0]);
+      selectedFilters.sentimentMax = parseFloat(values[1]);
+    });
+  }
+}
+
+/**
  * Aggregates data based on visible columns only.
  * Rows that differ only in hidden columns will be merged with Volume summed.
  * Hidden column values are stored as arrays to preserve all unique values.
@@ -444,7 +545,9 @@ async function clearAllFilters() {
     topic: [],
     intent: [],
     agentTask: [],
-    isAutomatable: false
+    isAutomatable: false,
+    sentimentMin: null,
+    sentimentMax: null
   };
 
   // Uncheck all checkboxes
@@ -461,6 +564,12 @@ async function clearAllFilters() {
   const isAutomatableToggle = document.getElementById('isAutomatableToggle');
   if (isAutomatableToggle) {
     isAutomatableToggle.checked = false;
+  }
+
+  // Reset sentiment slider to full range
+  if (sentimentSlider) {
+    const range = sentimentSlider.options.range;
+    sentimentSlider.set([range.min, range.max]);
   }
 
   // Get current project
@@ -885,6 +994,12 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
             }
             if (filters.isAutomatable) {
                 params.append('is_automatable', '1');
+            }
+            if (filters.sentimentMin !== null && filters.sentimentMin !== undefined) {
+                params.append('sentiment_min', filters.sentimentMin);
+            }
+            if (filters.sentimentMax !== null && filters.sentimentMax !== undefined) {
+                params.append('sentiment_max', filters.sentimentMax);
             }
         }
 

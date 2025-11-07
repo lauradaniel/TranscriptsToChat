@@ -8,8 +8,11 @@
   <script src="chart.js"></script>
   <link rel="stylesheet" href="styleUI.css">
   <link rel="stylesheet" href="table-scroll-styles.css">
- 
-  
+
+  <!-- noUiSlider for sentiment range slider -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+
 </head>
 <body>
   <div id="landingPage" class="landing-page">
@@ -313,14 +316,40 @@
 
             <!-- IsAutomatable Toggle -->
             <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field">
-             
+
               <div class="filter-toggle-container">
                 <span class="ngnx-form-field__label">Automatable Only</span>
                 <label class="filter-toggle-switch">
                   <input type="checkbox" id="isAutomatableToggle" />
                   <span class="filter-toggle-slider"></span>
                 </label>
-                
+
+              </div>
+            </nx-form-field>
+
+            <!-- Sentiment Score Slider -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field sentiment-slider-field">
+              <label class="ngnx-form-field__label">Avg. Sentiment Score</label>
+              <div class="sentiment-slider-container">
+                <div class="sentiment-inputs">
+                  <div class="sentiment-input-group">
+                    <label for="minSentiment" class="sentiment-input-label">From</label>
+                    <input type="number"
+                           id="minSentiment"
+                           class="sentiment-input-box ngnx-input-text ngnx-input-text--small-form-size"
+                           step="0.01"
+                           readonly />
+                  </div>
+                  <div class="sentiment-input-group">
+                    <label for="maxSentiment" class="sentiment-input-label">To</label>
+                    <input type="number"
+                           id="maxSentiment"
+                           class="sentiment-input-box ngnx-input-text ngnx-input-text--small-form-size"
+                           step="0.01"
+                           readonly />
+                  </div>
+                </div>
+                <div id="sentimentSlider" class="sentiment-slider"></div>
               </div>
             </nx-form-field>
 
