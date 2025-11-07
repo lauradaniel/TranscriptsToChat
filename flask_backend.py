@@ -1365,8 +1365,12 @@ def prepare_chat(project_id):
         print(f"\n{'='*60}")
         print(f"📝 PREPARING CHAT CONTEXT - Project {project_id}")
         print(f"{'='*60}")
-        print(f"Filters: {filters}")
+        print(f"Filters received: {filters}")
+        for key, value in filters.items():
+            print(f"  - {key}: {value} (type: {type(value).__name__})")
         print(f"Total transcript files found in DB: {len(transcript_refs)}")
+        if len(transcript_refs) > 0:
+            print(f"  Sample IDs: {[ref[0] for ref in transcript_refs[:5]]}")
 
         if not transcript_refs:
             return jsonify({

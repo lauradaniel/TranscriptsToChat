@@ -1296,6 +1296,17 @@ async function openAIChat(intent, topic, category, agentTask) {
         chatFilters.is_automatable = '1';
     }
 
+    // Debug logging
+    console.log('🔍 Chat Filters Debug:');
+    console.log('  Row Data:', rowData);
+    console.log('  Visible Columns:', visibleColumns);
+    console.log('  Hidden Column Arrays:');
+    if (rowData._hidden_Category) console.log('    _hidden_Category:', rowData._hidden_Category);
+    if (rowData._hidden_Topic) console.log('    _hidden_Topic:', rowData._hidden_Topic);
+    if (rowData._hidden_Intent) console.log('    _hidden_Intent:', rowData._hidden_Intent);
+    if (rowData._hidden_Agent_Task) console.log('    _hidden_Agent_Task:', rowData._hidden_Agent_Task);
+    console.log('  Chat Filters being sent:', chatFilters);
+
     // Store chat context
     currentChatContext = {
         projectId: projectId,
