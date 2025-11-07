@@ -9,10 +9,6 @@
   <link rel="stylesheet" href="styleUI.css">
   <link rel="stylesheet" href="table-scroll-styles.css">
 
-  <!-- noUiSlider for sentiment range slider -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
-
 </head>
 <body>
   <div id="landingPage" class="landing-page">
@@ -349,7 +345,30 @@
                            readonly />
                   </div>
                 </div>
-                <div id="sentimentSlider" class="sentiment-slider"></div>
+                <div class="sentiment-slider-wrapper">
+                  <div class="sentiment-slider-track">
+                    <div class="sentiment-slider-range" id="sentimentSliderRange"></div>
+                  </div>
+                  <input type="range"
+                         id="sentimentSliderMin"
+                         class="sentiment-slider-input"
+                         min="1"
+                         max="5"
+                         step="0.01"
+                         value="1" />
+                  <input type="range"
+                         id="sentimentSliderMax"
+                         class="sentiment-slider-input"
+                         min="1"
+                         max="5"
+                         step="0.01"
+                         value="5" />
+                  <div class="sentiment-slider-labels">
+                    <span id="sentimentLabelMin">1.00</span>
+                    <span id="sentimentLabelMid">3.00</span>
+                    <span id="sentimentLabelMax">5.00</span>
+                  </div>
+                </div>
               </div>
             </nx-form-field>
 
