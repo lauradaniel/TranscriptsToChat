@@ -369,11 +369,19 @@ function toggleColumnVisibility(columnKey) {
  * Initialize the sentiment score slider with min/max values from backend
  */
 async function initializeSentimentSlider(projectId) {
-  const sliderElement = document.getElementById('sentimentSlider');
+  const minSlider = document.getElementById('sentimentSliderMin');
+  const maxSlider = document.getElementById('sentimentSliderMax');
   const minInput = document.getElementById('minSentiment');
   const maxInput = document.getElementById('maxSentiment');
+  const rangeEl = document.getElementById('sentimentSliderRange');
+  const labelMin = document.getElementById('sentimentLabelMin');
+  const labelMid = document.getElementById('sentimentLabelMid');
+  const labelMax = document.getElementById('sentimentLabelMax');
 
-  if (!sliderElement || !minInput || !maxInput) return;
+  if (!minSlider || !maxSlider || !minInput || !maxInput) return;
+
+  let dataMin = 1.0;
+  let dataMax = 5.0;
 
   try {
     // Fetch sentiment range from backend
@@ -381,81 +389,82 @@ async function initializeSentimentSlider(projectId) {
     const result = await response.json();
 
     if (result.success) {
-      const min = result.min_sentiment || 1.0;
-      const max = result.max_sentiment || 5.0;
-
-      // Destroy existing slider if it exists
-      if (sentimentSlider) {
-        sentimentSlider.destroy();
-      }
-
-      // Create the slider
-      sentimentSlider = noUiSlider.create(sliderElement, {
-        start: [min, max],
-        connect: true,
-        range: {
-          'min': min,
-          'max': max
-        },
-        step: 0.01,
-        tooltips: [
-          { to: (value) => value.toFixed(2) },
-          { to: (value) => value.toFixed(2) }
-        ],
-        pips: {
-          mode: 'positions',
-          values: [0, 50, 100],
-          density: 4,
-          format: {
-            to: (value) => value.toFixed(2)
-          }
-        }
-      });
-
-      // Update inputs when slider changes
-      sentimentSlider.on('update', (values) => {
-        minInput.value = parseFloat(values[0]).toFixed(2);
-        maxInput.value = parseFloat(values[1]).toFixed(2);
-        selectedFilters.sentimentMin = parseFloat(values[0]);
-        selectedFilters.sentimentMax = parseFloat(values[1]);
-      });
-
+      dataMin = result.min_sentiment || 1.0;
+      dataMax = result.max_sentiment || 5.0;
     }
   } catch (error) {
-    console.error('Error initializing sentiment slider:', error);
-    // Fallback to default range
-    if (sentimentSlider) {
-      sentimentSlider.destroy();
-    }
-    sentimentSlider = noUiSlider.create(sliderElement, {
-      start: [1.0, 5.0],
-      connect: true,
-      range: {
-        'min': 1.0,
-        'max': 5.0
-      },
-      step: 0.01,
-      tooltips: [
-        { to: (value) => value.toFixed(2) },
-        { to: (value) => value.toFixed(2) }
-      ],
-      pips: {
-        mode: 'positions',
-        values: [0, 50, 100],
-        density: 4,
-        format: {
-          to: (value) => value.toFixed(2)
-        }
-      }
-    });
-
-    sentimentSlider.on('update', (values) => {
-      minInput.value = parseFloat(values[0]).toFixed(2);
-      maxInput.value = parseFloat(values[1]).toFixed(2);
-      selectedFilters.sentimentMin = parseFloat(values[0]);
-      selectedFilters.sentimentMax = parseFloat(values[1]);
-    });
+    console.error('Error fetching sentiment range:', error);
   }
+
+  // Set slider min/max attributes
+  minSlider.min = dataMin;
+  minSlider.max = dataMax;
+  minSlider.value = dataMin;
+  maxSlider.min = dataMin;
+  maxSlider.max = dataMax;
+  maxSlider.value = dataMax;
+
+  // Update labels
+  labelMin.textContent = dataMin.toFixed(2);
+  labelMid.textContent = ((dataMin + dataMax) / 2).toFixed(2);
+  labelMax.textContent = dataMax.toFixed(2);
+
+  // Update input boxes
+  minInput.value = dataMin.toFixed(2);
+  maxInput.value = dataMax.toFixed(2);
+
+  // Initialize filters
+  selectedFilters.sentimentMin = dataMin;
+  selectedFilters.sentimentMax = dataMax;
+
+  // Function to update the visual range overlay
+  const updateRange = () => {
+    const min = parseFloat(minSlider.value);
+    const max = parseFloat(maxSlider.value);
+
+    // Prevent crossing
+    if (min > max - 0.01) {
+      minSlider.value = max - 0.01;
+    }
+    if (max < min + 0.01) {
+      maxSlider.value = min + 0.01;
+    }
+
+    const actualMin = parseFloat(minSlider.value);
+    const actualMax = parseFloat(maxSlider.value);
+
+    // Update input boxes
+    minInput.value = actualMin.toFixed(2);
+    maxInput.value = actualMax.toFixed(2);
+
+    // Update filters
+    selectedFilters.sentimentMin = actualMin;
+    selectedFilters.sentimentMax = actualMax;
+
+    // Update visual range
+    const percentMin = ((actualMin - dataMin) / (dataMax - dataMin)) * 100;
+    const percentMax = ((actualMax - dataMin) / (dataMax - dataMin)) * 100;
+
+    rangeEl.style.left = percentMin + '%';
+    rangeEl.style.width = (percentMax - percentMin) + '%';
+  };
+
+  // Attach event listeners
+  minSlider.addEventListener('input', updateRange);
+  maxSlider.addEventListener('input', updateRange);
+
+  // Initial range update
+  updateRange();
+
+  // Store reference for clear function
+  sentimentSlider = {
+    reset: () => {
+      minSlider.value = dataMin;
+      maxSlider.value = dataMax;
+      updateRange();
+    },
+    getRange: () => ({ min: dataMin, max: dataMax })
+  };
 }
 
 /**
@@ -567,9 +576,8 @@ async function clearAllFilters() {
   }
 
   // Reset sentiment slider to full range
-  if (sentimentSlider) {
-    const range = sentimentSlider.options.range;
-    sentimentSlider.set([range.min, range.max]);
+  if (sentimentSlider && sentimentSlider.reset) {
+    sentimentSlider.reset();
   }
 
   // Get current project
