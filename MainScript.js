@@ -1422,6 +1422,14 @@ async function openAIChat(intent, topic, category, agentTask) {
         chatFilters.is_automatable = '1';
     }
 
+    // Include sentiment filters if they were applied to the table
+    if (selectedFilters && selectedFilters.sentimentMin !== null && selectedFilters.sentimentMin !== undefined) {
+        chatFilters.sentiment_min = selectedFilters.sentimentMin;
+    }
+    if (selectedFilters && selectedFilters.sentimentMax !== null && selectedFilters.sentimentMax !== undefined) {
+        chatFilters.sentiment_max = selectedFilters.sentimentMax;
+    }
+
     console.log('🔍 Chat Filters being sent:', chatFilters);
 
     // Store chat context
