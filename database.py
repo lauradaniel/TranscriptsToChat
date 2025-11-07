@@ -366,9 +366,16 @@ class TranscriptDatabase:
             conditions = []
             for column, value in filters.items():
                 if value is not None and value != '':
+                    # Handle sentiment range filters
+                    if column == 'sentiment_min':
+                        conditions.append("sentiment_score >= ?")
+                        params.append(float(value))
+                    elif column == 'sentiment_max':
+                        conditions.append("sentiment_score <= ?")
+                        params.append(float(value))
                     # Handle multi-select filters (plural forms with comma-separated values)
                     # e.g., 'categories': 'value1,value2,value3' or 'intents': 'val1,val2'
-                    if column in ['categories', 'topics', 'intents', 'agent_tasks']:
+                    elif column in ['categories', 'topics', 'intents', 'agent_tasks']:
                         # Multi-select filter - split by comma and create OR conditions
                         values = [v.strip() for v in value.split(',') if v.strip()]
                         if values:
