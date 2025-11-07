@@ -404,8 +404,16 @@ class TranscriptDatabase:
         # Group by interaction_id to get exactly one row per unique interaction_id
         query += " GROUP BY interaction_id"
 
+        # Debug logging
+        print(f"\n🔍 Database Query Debug:")
+        print(f"  Filters: {filters}")
+        print(f"  Generated SQL: {query}")
+        print(f"  Parameters: {params}")
+
         cursor.execute(query, params)
-        return cursor.fetchall()
+        results = cursor.fetchall()
+        print(f"  Results count: {len(results)}")
+        return results
     
     def close(self):
         """Close database connection"""
