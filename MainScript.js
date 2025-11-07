@@ -419,6 +419,7 @@ async function applyFilters() {
   selectedFilters.isAutomatable = isAutomatableToggle ? isAutomatableToggle.checked : false;
 
   console.log('Applying filters:', selectedFilters);
+  console.log('Visible columns:', visibleColumns);
 
   // Get current project
   const projectIdInput = document.getElementById('chatProjectSearch');
@@ -431,7 +432,7 @@ async function applyFilters() {
   }
 
   // Reload the table with filters
-  await fetchAndDisplayProjectSummary(projectId, projectName, selectedFilters);
+  await fetchAndDisplayProjectSummary(projectId, projectName, selectedFilters, visibleColumns);
 
   closeFilterPanel();
 }
@@ -853,8 +854,9 @@ function selectChatProject(projectId, projectName) {
  * @param {number} projectId - The project ID
  * @param {string} projectName - The project name
  * @param {object} filters - Optional filter object with category, topic, intent, agentTask, isAutomatable
+ * @param {object} visibleCols - Optional visible columns object {Category: true, Topic: true, ...}
  */
-async function fetchAndDisplayProjectSummary(projectId, projectName, filters = null) {
+async function fetchAndDisplayProjectSummary(projectId, projectName, filters = null, visibleCols = null) {
     const landingMain = document.querySelector('.landing-main');
 
     // Remove any existing temporary content (no loading message)
@@ -866,10 +868,9 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
     try {
         // Build query parameters from filters
         let url = `${API_BASE}/api/projects/${projectId}/summary`;
+        const params = new URLSearchParams();
 
         if (filters) {
-            const params = new URLSearchParams();
-
             if (filters.category && filters.category.length > 0) {
                 params.append('categories', filters.category.join(','));
             }
@@ -885,10 +886,23 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
             if (filters.isAutomatable) {
                 params.append('is_automatable', '1');
             }
+        }
 
-            if (params.toString()) {
-                url += '?' + params.toString();
+        // Add visible columns to GROUP BY only those columns
+        // This prevents double-counting when columns are hidden
+        if (visibleCols) {
+            const groupByColumns = [];
+            if (visibleCols.Category !== false) groupByColumns.push('category');
+            if (visibleCols.Topic !== false) groupByColumns.push('topic');
+            if (visibleCols.Intent !== false) groupByColumns.push('intent');
+            if (visibleCols.Agent_Task !== false) groupByColumns.push('agent_task');
+            if (groupByColumns.length > 0) {
+                params.append('group_by', groupByColumns.join(','));
             }
+        }
+
+        if (params.toString()) {
+            url += '?' + params.toString();
         }
 
         console.log('Fetching summary with URL:', url);
@@ -933,14 +947,14 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
 
 /**
  * Generates and displays the sortable/reorganizable table.
+ * Note: Data is already properly aggregated by backend based on visible columns,
+ * so we don't need client-side aggregation anymore.
  */
 function createChatSummaryTable(data, projectName, message = null) {
     const landingMain = document.querySelector('.landing-main');
 
-    // Aggregate data based on visible columns
-    const aggregatedData = aggregateDataByVisibleColumns(data, visibleColumns);
-
-    currentChatData = aggregatedData; // Store aggregated data globally for sorting
+    // Store data directly - backend already aggregated based on visible columns
+    currentChatData = data;
     currentSortColumn = 'Volume';
     currentSortDirection = 'desc';
 
@@ -1014,28 +1028,28 @@ function createChatSummaryTable(data, projectName, message = null) {
         `;
     };
 
-    // 1. Sort aggregated data by Volume DESC
-    aggregatedData.sort((a, b) => b.Volume - a.Volume);
+    // 1. Sort data by Volume DESC
+    data.sort((a, b) => b.Volume - a.Volume);
 
     // 2. Remove any existing temporary content
     const tempContent = document.getElementById('temporaryViewContent');
     if (tempContent) {
         tempContent.remove();
     }
-    
+
     // 3. Create and append new content container (100% width and height, no page scroll)
     const contentDiv = document.createElement('div');
     contentDiv.id = 'temporaryViewContent';
     contentDiv.style.cssText = 'width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column;';
     contentDiv.innerHTML = `
         <div class="chat-summary-table-container" style="width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column;">
-            ${generateTableHTML(aggregatedData, columnDefinitions)}
+            ${generateTableHTML(data, columnDefinitions)}
         </div>
     `;
     landingMain.appendChild(contentDiv);
 
     // 4. Attach drag/drop handlers
-    if (aggregatedData.length > 0) {
+    if (data.length > 0) {
         attachChatTableDragDropHandlers();
     }
 }
@@ -1248,27 +1262,20 @@ async function openAIChat(intent, topic, category, agentTask) {
 
     const rowData = rows[0];
 
-    // Build filters combining the row's specific values AND any active global filters
-    // For VISIBLE columns: use the specific row's values
-    // For HIDDEN columns: use ALL values that were aggregated together (stored in _hidden_ arrays)
+    // Build filters combining the row's specific values for VISIBLE columns
+    // For HIDDEN columns: use the filter panel selections (if any)
     const chatFilters = {};
 
     // Category filter
     if (visibleColumns.Category !== false) {
         chatFilters.category = rowData.Category;
-    } else if (rowData._hidden_Category && rowData._hidden_Category.length > 0) {
-        // Use all aggregated values from hidden column
-        chatFilters.categories = rowData._hidden_Category.join(',');
     } else if (selectedFilters && selectedFilters.category && selectedFilters.category.length > 0) {
-        // Fallback to filter panel selections
         chatFilters.categories = selectedFilters.category.join(',');
     }
 
     // Topic filter
     if (visibleColumns.Topic !== false) {
         chatFilters.topic = rowData.Topic;
-    } else if (rowData._hidden_Topic && rowData._hidden_Topic.length > 0) {
-        chatFilters.topics = rowData._hidden_Topic.join(',');
     } else if (selectedFilters && selectedFilters.topic && selectedFilters.topic.length > 0) {
         chatFilters.topics = selectedFilters.topic.join(',');
     }
@@ -1276,8 +1283,6 @@ async function openAIChat(intent, topic, category, agentTask) {
     // Intent filter
     if (visibleColumns.Intent !== false) {
         chatFilters.intent = rowData.Intent;
-    } else if (rowData._hidden_Intent && rowData._hidden_Intent.length > 0) {
-        chatFilters.intents = rowData._hidden_Intent.join(',');
     } else if (selectedFilters && selectedFilters.intent && selectedFilters.intent.length > 0) {
         chatFilters.intents = selectedFilters.intent.join(',');
     }
@@ -1285,8 +1290,6 @@ async function openAIChat(intent, topic, category, agentTask) {
     // Agent Task filter
     if (visibleColumns.Agent_Task !== false) {
         chatFilters.agent_task = rowData.Agent_Task;
-    } else if (rowData._hidden_Agent_Task && rowData._hidden_Agent_Task.length > 0) {
-        chatFilters.agent_tasks = rowData._hidden_Agent_Task.join(',');
     } else if (selectedFilters && selectedFilters.agentTask && selectedFilters.agentTask.length > 0) {
         chatFilters.agent_tasks = selectedFilters.agentTask.join(',');
     }
@@ -1296,16 +1299,7 @@ async function openAIChat(intent, topic, category, agentTask) {
         chatFilters.is_automatable = '1';
     }
 
-    // Debug logging
-    console.log('🔍 Chat Filters Debug:');
-    console.log('  Row Data:', rowData);
-    console.log('  Visible Columns:', visibleColumns);
-    console.log('  Hidden Column Arrays:');
-    if (rowData._hidden_Category) console.log('    _hidden_Category:', rowData._hidden_Category);
-    if (rowData._hidden_Topic) console.log('    _hidden_Topic:', rowData._hidden_Topic);
-    if (rowData._hidden_Intent) console.log('    _hidden_Intent:', rowData._hidden_Intent);
-    if (rowData._hidden_Agent_Task) console.log('    _hidden_Agent_Task:', rowData._hidden_Agent_Task);
-    console.log('  Chat Filters being sent:', chatFilters);
+    console.log('🔍 Chat Filters being sent:', chatFilters);
 
     // Store chat context
     currentChatContext = {

@@ -501,6 +501,10 @@ def get_project_summary(project_id):
         filter_agent_tasks = request.args.get('agent_tasks', '').split(',') if request.args.get('agent_tasks') else []
         filter_is_automatable = request.args.get('is_automatable', '').lower() in ['1', 'true']
 
+        # Get group_by parameter (comma-separated column names)
+        group_by_param = request.args.get('group_by', '')
+        group_by_columns = [c.strip() for c in group_by_param.split(',') if c.strip()] if group_by_param else ['category', 'topic', 'intent', 'agent_task']
+
         # Clean up empty strings from split
         filter_categories = [c.strip() for c in filter_categories if c.strip()]
         filter_topics = [t.strip() for t in filter_topics if t.strip()]
@@ -589,22 +593,36 @@ def get_project_summary(project_id):
             if filter_is_automatable:
                 where_conditions.append("is_automatable = '1'")
 
-            # Build the query with filters
+            # Build dynamic SELECT and GROUP BY based on group_by_columns
+            # Map lowercase column names to display names
+            column_map = {
+                'category': ('category', 'Category'),
+                'topic': ('topic', 'Topic'),
+                'intent': ('intent', 'Intent'),
+                'agent_task': ('agent_task', 'Agent_Task')
+            }
+
+            select_columns = []
+            for col in group_by_columns:
+                if col in column_map:
+                    db_col, display_name = column_map[col]
+                    coalesce_value = "'Unknown'" if col == 'intent' else "'Not Specified'"
+                    select_columns.append(f"COALESCE({db_col}, {coalesce_value}) as {display_name}")
+
+            select_columns.append("COUNT(DISTINCT interaction_id) as Volume")
+
             query = f"""
                 SELECT
-                    COALESCE(category, 'Not Specified') as Category,
-                    COALESCE(topic, 'Not Specified') as Topic,
-                    COALESCE(intent, 'Unknown') as Intent,
-                    COALESCE(agent_task, 'Not Specified') as Agent_Task,
-                    COUNT(DISTINCT interaction_id) as Volume
+                    {', '.join(select_columns)}
                 FROM {table_name}
             """
 
             if where_conditions:
                 query += " WHERE " + " AND ".join(where_conditions)
 
-            query += """
-                GROUP BY intent, topic, category, agent_task
+            # GROUP BY only the columns specified
+            query += f"""
+                GROUP BY {', '.join(group_by_columns)}
                 ORDER BY Volume DESC
             """
 
@@ -620,16 +638,23 @@ def get_project_summary(project_id):
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
-            # Format results
+            # Format results dynamically based on columns returned
+            column_names = [description[0] for description in cursor.description]
             summary_data = []
             for row in rows:
-                summary_data.append({
-                    'Category': row[0],
-                    'Topic': row[1],
-                    'Intent': row[2],
-                    'Agent_Task': row[3],
-                    'Volume': row[4]
-                })
+                row_dict = {}
+                for i, value in enumerate(row):
+                    row_dict[column_names[i]] = value
+                # Fill in missing columns with 'Not Specified' for frontend compatibility
+                if 'Category' not in row_dict:
+                    row_dict['Category'] = 'Not Specified'
+                if 'Topic' not in row_dict:
+                    row_dict['Topic'] = 'Not Specified'
+                if 'Intent' not in row_dict:
+                    row_dict['Intent'] = 'Unknown'
+                if 'Agent_Task' not in row_dict:
+                    row_dict['Agent_Task'] = 'Not Specified'
+                summary_data.append(row_dict)
 
         return jsonify({
             'success': True,
