@@ -501,6 +501,14 @@ def get_project_summary(project_id):
         filter_agent_tasks = request.args.get('agent_tasks', '').split(',') if request.args.get('agent_tasks') else []
         filter_is_automatable = request.args.get('is_automatable', '').lower() in ['1', 'true']
 
+        # Get sentiment range filters
+        sentiment_min = request.args.get('sentiment_min')
+        sentiment_max = request.args.get('sentiment_max')
+        if sentiment_min:
+            sentiment_min = float(sentiment_min)
+        if sentiment_max:
+            sentiment_max = float(sentiment_max)
+
         # Get group_by parameter (comma-separated column names)
         group_by_param = request.args.get('group_by', '')
         group_by_columns = [c.strip() for c in group_by_param.split(',') if c.strip()] if group_by_param else ['category', 'topic', 'intent', 'agent_task']
@@ -592,6 +600,14 @@ def get_project_summary(project_id):
             # IsAutomatable filter
             if filter_is_automatable:
                 where_conditions.append("is_automatable = '1'")
+
+            # Sentiment score filter
+            if sentiment_min is not None:
+                where_conditions.append("sentiment_score >= ?")
+                params.append(sentiment_min)
+            if sentiment_max is not None:
+                where_conditions.append("sentiment_score <= ?")
+                params.append(sentiment_max)
 
             # Build dynamic SELECT and GROUP BY based on group_by_columns
             # Map lowercase column names to display names
@@ -1498,6 +1514,62 @@ def get_filter_values(project_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/api/projects/<int:project_id>/sentiment-range', methods=['GET'])
+def get_sentiment_range(project_id):
+    """
+    Get min and max sentiment scores for a project.
+    Used to initialize the sentiment slider range.
+
+    Returns:
+    {
+        "success": true,
+        "min_sentiment": 1.25,
+        "max_sentiment": 4.85
+    }
+    """
+    try:
+        with TranscriptDatabase(DB_PATH) as local_db:
+            table_name = f"conversations_{project_id}"
+            cursor = local_db.conn.cursor()
+
+            # Get min and max sentiment scores
+            query = f"""
+                SELECT
+                    MIN(sentiment_score) as min_sentiment,
+                    MAX(sentiment_score) as max_sentiment
+                FROM {table_name}
+                WHERE sentiment_score IS NOT NULL
+            """
+
+            cursor.execute(query)
+            row = cursor.fetchone()
+
+            if row and row[0] is not None and row[1] is not None:
+                return jsonify({
+                    'success': True,
+                    'min_sentiment': round(float(row[0]), 2),
+                    'max_sentiment': round(float(row[1]), 2)
+                })
+            else:
+                # No sentiment data, return default range
+                return jsonify({
+                    'success': True,
+                    'min_sentiment': 1.0,
+                    'max_sentiment': 5.0
+                })
+
+    except Exception as e:
+        print(f"Get sentiment range error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Return default range on error
+        return jsonify({
+            'success': True,
+            'min_sentiment': 1.0,
+            'max_sentiment': 5.0
+        })
 
 
 @app.route('/api/projects/<int:project_id>/chat/query', methods=['POST'])
