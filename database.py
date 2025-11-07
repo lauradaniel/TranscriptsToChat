@@ -365,16 +365,38 @@ class TranscriptDatabase:
         if filters:
             conditions = []
             for column, value in filters.items():
-                if value is not None:
-                    # Convert display values back to NULL to match database
-                    # The summary query uses COALESCE to convert NULL → 'Not Specified'/'Unknown'
-                    # So we need to convert back when filtering
-                    if value == 'Not Specified' or value == 'Unknown':
-                        # Match NULL values in database
-                        conditions.append(f"{column} IS NULL")
+                if value is not None and value != '':
+                    # Handle multi-select filters (plural forms with comma-separated values)
+                    # e.g., 'categories': 'value1,value2,value3' or 'intents': 'val1,val2'
+                    if column in ['categories', 'topics', 'intents', 'agent_tasks']:
+                        # Multi-select filter - split by comma and create OR conditions
+                        values = [v.strip() for v in value.split(',') if v.strip()]
+                        if values:
+                            # Map plural to singular column name
+                            column_map = {
+                                'categories': 'category',
+                                'topics': 'topic',
+                                'intents': 'intent',
+                                'agent_tasks': 'agent_task'
+                            }
+                            actual_column = column_map.get(column, column)
+
+                            or_conditions = []
+                            for val in values:
+                                if val == 'Not Specified' or val == 'Unknown':
+                                    or_conditions.append(f"{actual_column} IS NULL")
+                                else:
+                                    or_conditions.append(f"{actual_column} = ?")
+                                    params.append(val)
+                            if or_conditions:
+                                conditions.append(f"({' OR '.join(or_conditions)})")
                     else:
-                        conditions.append(f"{column} = ?")
-                        params.append(value)
+                        # Single value filter
+                        if value == 'Not Specified' or value == 'Unknown':
+                            conditions.append(f"{column} IS NULL")
+                        else:
+                            conditions.append(f"{column} = ?")
+                            params.append(value)
 
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
