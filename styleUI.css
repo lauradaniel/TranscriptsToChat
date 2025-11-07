@@ -1942,10 +1942,36 @@ input:checked + .filter-toggle-slider {
    CUSTOM DUAL-RANGE SLIDER (No external libs)
    ============================================ */
 
+.sentiment-inputs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sentiment-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sentiment-input-label {
+  font-size: 12px;
+  color: var(--ngnx-color-neutral-700);
+  font-weight: 500;
+}
+
+.sentiment-input-box {
+  width: 70px !important;
+  font-size: 12px;
+  text-align: center;
+}
+
 .sentiment-slider-wrapper {
   position: relative;
   margin: 20px 0 50px 0;
   height: 60px;
+  width: 216px;
 }
 
 .sentiment-slider-track {
