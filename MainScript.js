@@ -360,13 +360,15 @@ function toggleColumnVisibility(columnKey) {
 /**
  * Aggregates data based on visible columns only.
  * Rows that differ only in hidden columns will be merged with Volume summed.
+ * Hidden column values are stored as arrays to preserve all unique values.
  */
 function aggregateDataByVisibleColumns(data, visibleCols) {
   if (!data || data.length === 0) return data;
 
-  // Get list of visible column keys (excluding Volume and AI_Chat)
-  const visibleKeys = ['Category', 'Topic', 'Intent', 'Agent_Task']
-    .filter(key => visibleCols[key] !== false);
+  // Get list of visible and hidden column keys
+  const allKeys = ['Category', 'Topic', 'Intent', 'Agent_Task'];
+  const visibleKeys = allKeys.filter(key => visibleCols[key] !== false);
+  const hiddenKeys = allKeys.filter(key => visibleCols[key] === false);
 
   // Group rows by visible columns
   const grouped = {};
@@ -379,14 +381,33 @@ function aggregateDataByVisibleColumns(data, visibleCols) {
     if (!grouped[groupKey]) {
       // Initialize new group with first row's data
       grouped[groupKey] = { ...row, Volume: 0 };
-      // For hidden columns, set to first value encountered
+
+      // For visible columns, use the value
       visibleKeys.forEach(key => {
         grouped[groupKey][key] = row[key];
+      });
+
+      // For hidden columns, initialize arrays to track all unique values
+      hiddenKeys.forEach(key => {
+        grouped[groupKey][`_hidden_${key}`] = [];
       });
     }
 
     // Sum the Volume
     grouped[groupKey].Volume += row.Volume;
+
+    // Collect all unique values for hidden columns
+    hiddenKeys.forEach(key => {
+      const value = row[key];
+      const hiddenArray = grouped[groupKey][`_hidden_${key}`];
+      if (!hiddenArray.includes(value)) {
+        hiddenArray.push(value);
+      }
+      // Also keep one value in the regular field for display purposes
+      if (!grouped[groupKey][key]) {
+        grouped[groupKey][key] = value;
+      }
+    });
   });
 
   return Object.values(grouped);
@@ -1229,19 +1250,25 @@ async function openAIChat(intent, topic, category, agentTask) {
 
     // Build filters combining the row's specific values AND any active global filters
     // For VISIBLE columns: use the specific row's values
-    // For HIDDEN columns: use the original multi-select filters from filter panel
+    // For HIDDEN columns: use ALL values that were aggregated together (stored in _hidden_ arrays)
     const chatFilters = {};
 
     // Category filter
     if (visibleColumns.Category !== false) {
         chatFilters.category = rowData.Category;
+    } else if (rowData._hidden_Category && rowData._hidden_Category.length > 0) {
+        // Use all aggregated values from hidden column
+        chatFilters.categories = rowData._hidden_Category.join(',');
     } else if (selectedFilters && selectedFilters.category && selectedFilters.category.length > 0) {
+        // Fallback to filter panel selections
         chatFilters.categories = selectedFilters.category.join(',');
     }
 
     // Topic filter
     if (visibleColumns.Topic !== false) {
         chatFilters.topic = rowData.Topic;
+    } else if (rowData._hidden_Topic && rowData._hidden_Topic.length > 0) {
+        chatFilters.topics = rowData._hidden_Topic.join(',');
     } else if (selectedFilters && selectedFilters.topic && selectedFilters.topic.length > 0) {
         chatFilters.topics = selectedFilters.topic.join(',');
     }
@@ -1249,6 +1276,8 @@ async function openAIChat(intent, topic, category, agentTask) {
     // Intent filter
     if (visibleColumns.Intent !== false) {
         chatFilters.intent = rowData.Intent;
+    } else if (rowData._hidden_Intent && rowData._hidden_Intent.length > 0) {
+        chatFilters.intents = rowData._hidden_Intent.join(',');
     } else if (selectedFilters && selectedFilters.intent && selectedFilters.intent.length > 0) {
         chatFilters.intents = selectedFilters.intent.join(',');
     }
@@ -1256,6 +1285,8 @@ async function openAIChat(intent, topic, category, agentTask) {
     // Agent Task filter
     if (visibleColumns.Agent_Task !== false) {
         chatFilters.agent_task = rowData.Agent_Task;
+    } else if (rowData._hidden_Agent_Task && rowData._hidden_Agent_Task.length > 0) {
+        chatFilters.agent_tasks = rowData._hidden_Agent_Task.join(',');
     } else if (selectedFilters && selectedFilters.agentTask && selectedFilters.agentTask.length > 0) {
         chatFilters.agent_tasks = selectedFilters.agentTask.join(',');
     }
