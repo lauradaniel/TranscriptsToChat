@@ -373,6 +373,13 @@ class TranscriptDatabase:
                     elif column == 'sentiment_max':
                         conditions.append("sentiment_score <= ?")
                         params.append(float(value))
+                    # Handle duration range filters
+                    elif column == 'duration_min':
+                        conditions.append("duration_seconds >= ?")
+                        params.append(float(value))
+                    elif column == 'duration_max':
+                        conditions.append("duration_seconds <= ?")
+                        params.append(float(value))
                     # Handle multi-select filters (plural forms with comma-separated values)
                     # e.g., 'categories': 'value1,value2,value3' or 'intents': 'val1,val2'
                     elif column in ['categories', 'topics', 'intents', 'agent_tasks']:

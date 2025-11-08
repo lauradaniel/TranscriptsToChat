@@ -509,6 +509,14 @@ def get_project_summary(project_id):
         if sentiment_max:
             sentiment_max = float(sentiment_max)
 
+        # Get duration range filters
+        duration_min = request.args.get('duration_min')
+        duration_max = request.args.get('duration_max')
+        if duration_min:
+            duration_min = float(duration_min)
+        if duration_max:
+            duration_max = float(duration_max)
+
         # Get group_by parameter (comma-separated column names)
         group_by_param = request.args.get('group_by', '')
         group_by_columns = [c.strip() for c in group_by_param.split(',') if c.strip()] if group_by_param else ['category', 'topic', 'intent', 'agent_task']
@@ -608,6 +616,14 @@ def get_project_summary(project_id):
             if sentiment_max is not None:
                 where_conditions.append("sentiment_score <= ?")
                 params.append(sentiment_max)
+
+            # Duration filter
+            if duration_min is not None:
+                where_conditions.append("duration_seconds >= ?")
+                params.append(duration_min)
+            if duration_max is not None:
+                where_conditions.append("duration_seconds <= ?")
+                params.append(duration_max)
 
             # Build dynamic SELECT and GROUP BY based on group_by_columns
             # Map lowercase column names to display names
@@ -1569,6 +1585,62 @@ def get_sentiment_range(project_id):
             'success': True,
             'min_sentiment': 1.0,
             'max_sentiment': 5.0
+        })
+
+
+@app.route('/api/projects/<int:project_id>/duration-range', methods=['GET'])
+def get_duration_range(project_id):
+    """
+    Get min and max duration (in seconds) for a project.
+    Used to initialize the duration slider range.
+
+    Returns:
+    {
+        "success": true,
+        "min_duration": 45,
+        "max_duration": 1800
+    }
+    """
+    try:
+        with TranscriptDatabase(DB_PATH) as local_db:
+            table_name = f"conversations_{project_id}"
+            cursor = local_db.conn.cursor()
+
+            # Get min and max duration in seconds
+            query = f"""
+                SELECT
+                    MIN(duration_seconds) as min_duration,
+                    MAX(duration_seconds) as max_duration
+                FROM {table_name}
+                WHERE duration_seconds IS NOT NULL
+            """
+
+            cursor.execute(query)
+            row = cursor.fetchone()
+
+            if row and row[0] is not None and row[1] is not None:
+                return jsonify({
+                    'success': True,
+                    'min_duration': int(row[0]),
+                    'max_duration': int(row[1])
+                })
+            else:
+                # No duration data, return default range
+                return jsonify({
+                    'success': True,
+                    'min_duration': 0,
+                    'max_duration': 1000
+                })
+
+    except Exception as e:
+        print(f"Get duration range error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Return default range on error
+        return jsonify({
+            'success': True,
+            'min_duration': 0,
+            'max_duration': 1000
         })
 
 

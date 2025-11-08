@@ -135,11 +135,16 @@ let selectedFilters = {
   agentTask: [],
   isAutomatable: false,
   sentimentMin: null,
-  sentimentMax: null
+  sentimentMax: null,
+  durationMin: null,
+  durationMax: null
 };
 
 // Global sentiment slider instance
 let sentimentSlider = null;
+
+// Global duration slider instance
+let durationSlider = null;
 
 // Global state for column visibility
 const availableColumns = [
@@ -197,6 +202,9 @@ async function openFilterPanel() {
 
   // Initialize sentiment slider
   initializeSentimentSlider(projectId);
+
+  // Initialize duration slider
+  initializeDurationSlider(projectId);
 
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
@@ -468,6 +476,108 @@ async function initializeSentimentSlider(projectId) {
 }
 
 /**
+ * Initialize duration slider (similar to sentiment slider)
+ */
+async function initializeDurationSlider(projectId) {
+  const minSlider = document.getElementById('durationSliderMin');
+  const maxSlider = document.getElementById('durationSliderMax');
+  const minInput = document.getElementById('minDuration');
+  const maxInput = document.getElementById('maxDuration');
+  const rangeEl = document.getElementById('durationSliderRange');
+  const labelMin = document.getElementById('durationLabelMin');
+  const labelMid = document.getElementById('durationLabelMid');
+  const labelMax = document.getElementById('durationLabelMax');
+
+  if (!minSlider || !maxSlider || !minInput || !maxInput) return;
+
+  let dataMin = 0;
+  let dataMax = 1000;
+
+  try {
+    // Fetch duration range from backend
+    const response = await fetch(`${API_BASE}/api/projects/${projectId}/duration-range`);
+    const result = await response.json();
+
+    if (result.success) {
+      dataMin = result.min_duration || 0;
+      dataMax = result.max_duration || 1000;
+    }
+  } catch (error) {
+    console.error('Error fetching duration range:', error);
+  }
+
+  // Set slider min/max attributes
+  minSlider.min = dataMin;
+  minSlider.max = dataMax;
+  minSlider.value = dataMin;
+  maxSlider.min = dataMin;
+  maxSlider.max = dataMax;
+  maxSlider.value = dataMax;
+
+  // Update labels
+  labelMin.textContent = Math.round(dataMin);
+  labelMid.textContent = Math.round((dataMin + dataMax) / 2);
+  labelMax.textContent = Math.round(dataMax);
+
+  // Update input boxes
+  minInput.value = Math.round(dataMin);
+  maxInput.value = Math.round(dataMax);
+
+  // Initialize filters
+  selectedFilters.durationMin = dataMin;
+  selectedFilters.durationMax = dataMax;
+
+  // Function to update the visual range overlay
+  const updateRange = () => {
+    const min = parseFloat(minSlider.value);
+    const max = parseFloat(maxSlider.value);
+
+    // Prevent crossing
+    if (min > max - 1) {
+      minSlider.value = max - 1;
+    }
+    if (max < min + 1) {
+      maxSlider.value = min + 1;
+    }
+
+    const actualMin = parseFloat(minSlider.value);
+    const actualMax = parseFloat(maxSlider.value);
+
+    // Update input boxes
+    minInput.value = Math.round(actualMin);
+    maxInput.value = Math.round(actualMax);
+
+    // Update filters
+    selectedFilters.durationMin = actualMin;
+    selectedFilters.durationMax = actualMax;
+
+    // Update visual range
+    const percentMin = ((actualMin - dataMin) / (dataMax - dataMin)) * 100;
+    const percentMax = ((actualMax - dataMin) / (dataMax - dataMin)) * 100;
+
+    rangeEl.style.left = percentMin + '%';
+    rangeEl.style.width = (percentMax - percentMin) + '%';
+  };
+
+  // Attach event listeners
+  minSlider.addEventListener('input', updateRange);
+  maxSlider.addEventListener('input', updateRange);
+
+  // Initial range update
+  updateRange();
+
+  // Store reference for clear function
+  durationSlider = {
+    reset: () => {
+      minSlider.value = dataMin;
+      maxSlider.value = dataMax;
+      updateRange();
+    },
+    getRange: () => ({ min: dataMin, max: dataMax })
+  };
+}
+
+/**
  * Aggregates data based on visible columns only.
  * Rows that differ only in hidden columns will be merged with Volume summed.
  * Hidden column values are stored as arrays to preserve all unique values.
@@ -556,7 +666,9 @@ async function clearAllFilters() {
     agentTask: [],
     isAutomatable: false,
     sentimentMin: null,
-    sentimentMax: null
+    sentimentMax: null,
+    durationMin: null,
+    durationMax: null
   };
 
   // Uncheck all checkboxes
@@ -578,6 +690,11 @@ async function clearAllFilters() {
   // Reset sentiment slider to full range
   if (sentimentSlider && sentimentSlider.reset) {
     sentimentSlider.reset();
+  }
+
+  // Reset duration slider to full range
+  if (durationSlider && durationSlider.reset) {
+    durationSlider.reset();
   }
 
   // Get current project
@@ -1009,6 +1126,12 @@ async function fetchAndDisplayProjectSummary(projectId, projectName, filters = n
             if (filters.sentimentMax !== null && filters.sentimentMax !== undefined) {
                 params.append('sentiment_max', filters.sentimentMax);
             }
+            if (filters.durationMin !== null && filters.durationMin !== undefined) {
+                params.append('duration_min', filters.durationMin);
+            }
+            if (filters.durationMax !== null && filters.durationMax !== undefined) {
+                params.append('duration_max', filters.durationMax);
+            }
         }
 
         // Add visible columns to GROUP BY only those columns
@@ -1428,6 +1551,14 @@ async function openAIChat(intent, topic, category, agentTask) {
     }
     if (selectedFilters && selectedFilters.sentimentMax !== null && selectedFilters.sentimentMax !== undefined) {
         chatFilters.sentiment_max = selectedFilters.sentimentMax;
+    }
+
+    // Include duration filters if they were applied to the table
+    if (selectedFilters && selectedFilters.durationMin !== null && selectedFilters.durationMin !== undefined) {
+        chatFilters.duration_min = selectedFilters.durationMin;
+    }
+    if (selectedFilters && selectedFilters.durationMax !== null && selectedFilters.durationMax !== undefined) {
+        chatFilters.duration_max = selectedFilters.durationMax;
     }
 
     console.log('🔍 Chat Filters being sent:', chatFilters);
