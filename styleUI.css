@@ -1989,7 +1989,7 @@ input:checked + .filter-toggle-slider {
   position: absolute;
   height: 100%;
   /*background: #237bc2;*/
-  background: linear-gradient(90deg, var(--ngnx-color-domain-sentiment-negative-400), var(--ngnx-color-domain-sentiment-neutral-20), var(--ngnx-color-domain-sentiment-positive-400));
+  background: linear-gradient(90deg, var(--ngnx-color-accent-indigo-20),var(--ngnx-color-accent-indigo-800));
   /*opacity: 0.3;*/
   border-radius: 4px;
   pointer-events: none;
@@ -2104,7 +2104,7 @@ input:checked + .filter-toggle-slider {
 
 .duration-input-label {
   font-size: 12px;
-  color: var(--ngnx-color-neutral-700);
+  color: #526B7A;
   font-weight: 500;
 }
 
@@ -2125,7 +2125,7 @@ input:checked + .filter-toggle-slider {
   position: absolute;
   width: 100%;
   height: 8px;
-  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  background: #bfbfbf;
   border-radius: 4px;
   top: 10px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
@@ -2134,8 +2134,8 @@ input:checked + .filter-toggle-slider {
 .duration-slider-range {
   position: absolute;
   height: 100%;
-  background: var(--ngnx-color-branding-primary-700);
-  opacity: 0.3;
+  background: linear-gradient(90deg, var(--ngnx-color-accent-olive-350),var(--ngnx-color-accent-maroon-800));
+  /*opacity: 0.3;*/
   border-radius: 4px;
   pointer-events: none;
 }
@@ -2144,7 +2144,7 @@ input:checked + .filter-toggle-slider {
   position: absolute;
   width: 100%;
   height: 20px;
-  top: 0;
+  top: 4px;
   left: 0;
   -webkit-appearance: none;
   appearance: none;
@@ -2212,7 +2212,7 @@ input:checked + .filter-toggle-slider {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--ngnx-color-application-font-700);
+  color: #526B7A;
   font-weight: 600;
   padding: 0 2px;
 }
