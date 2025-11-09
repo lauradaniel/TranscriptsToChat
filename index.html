@@ -369,6 +369,55 @@
                 </div>
               </div>
             </nx-form-field>
+
+            <!-- Duration Slider -->
+            <nx-form-field class="ngnx-xo-create-project-container__sidebar-form-field duration-slider-field">
+              <label class="ngnx-form-field__label">Avg. Duration (seconds)</label>
+              <div class="duration-slider-container">
+                <div class="duration-inputs">
+                  <div class="duration-input-group">
+                    <label for="minDuration" class="duration-input-label">From</label>
+                    <input type="number"
+                           id="minDuration"
+                           class="duration-input-box ngnx-input-text ngnx-input-text--small-form-size"
+                           step="1"
+                           readonly />
+                  </div>
+                  <div class="duration-input-group">
+                    <label for="maxDuration" class="duration-input-label">To</label>
+                    <input type="number"
+                           id="maxDuration"
+                           class="duration-input-box ngnx-input-text ngnx-input-text--small-form-size"
+                           step="1"
+                           readonly />
+                  </div>
+                </div>
+                <div class="duration-slider-wrapper">
+                  <div class="duration-slider-track">
+                    <div class="duration-slider-range" id="durationSliderRange"></div>
+                  </div>
+                  <input type="range"
+                         id="durationSliderMin"
+                         class="duration-slider-input"
+                         min="0"
+                         max="1000"
+                         step="1"
+                         value="0" />
+                  <input type="range"
+                         id="durationSliderMax"
+                         class="duration-slider-input"
+                         min="0"
+                         max="1000"
+                         step="1"
+                         value="1000" />
+                  <div class="duration-slider-labels">
+                    <span id="durationLabelMin">0</span>
+                    <span id="durationLabelMid">500</span>
+                    <span id="durationLabelMax">1000</span>
+                  </div>
+                </div>
+              </div>
+            </nx-form-field>
             <!-- Separator -->
             <div style="border-top: 1px solid var(--ngnx-color-application-glue-a-20); margin: 24px 0;"></div>
           </div>
