@@ -407,23 +407,32 @@ async function initializeSentimentSlider(projectId) {
   // Set slider min/max attributes
   minSlider.min = dataMin;
   minSlider.max = dataMax;
-  minSlider.value = dataMin;
   maxSlider.min = dataMin;
   maxSlider.max = dataMax;
-  maxSlider.value = dataMax;
+
+  // Restore previously selected values if they exist, otherwise use full range
+  const currentMin = (selectedFilters.sentimentMin !== null && selectedFilters.sentimentMin !== undefined)
+    ? selectedFilters.sentimentMin
+    : dataMin;
+  const currentMax = (selectedFilters.sentimentMax !== null && selectedFilters.sentimentMax !== undefined)
+    ? selectedFilters.sentimentMax
+    : dataMax;
+
+  minSlider.value = currentMin;
+  maxSlider.value = currentMax;
 
   // Update labels
   labelMin.textContent = dataMin.toFixed(2);
   labelMid.textContent = ((dataMin + dataMax) / 2).toFixed(2);
   labelMax.textContent = dataMax.toFixed(2);
 
-  // Update input boxes
-  minInput.value = dataMin.toFixed(2);
-  maxInput.value = dataMax.toFixed(2);
+  // Update input boxes with current values
+  minInput.value = currentMin.toFixed(2);
+  maxInput.value = currentMax.toFixed(2);
 
-  // Initialize filters
-  selectedFilters.sentimentMin = dataMin;
-  selectedFilters.sentimentMax = dataMax;
+  // Update filters with current values
+  selectedFilters.sentimentMin = currentMin;
+  selectedFilters.sentimentMax = currentMax;
 
   // Function to update the visual range overlay
   const updateRange = () => {
@@ -509,23 +518,32 @@ async function initializeDurationSlider(projectId) {
   // Set slider min/max attributes
   minSlider.min = dataMin;
   minSlider.max = dataMax;
-  minSlider.value = dataMin;
   maxSlider.min = dataMin;
   maxSlider.max = dataMax;
-  maxSlider.value = dataMax;
+
+  // Restore previously selected values if they exist, otherwise use full range
+  const currentMin = (selectedFilters.durationMin !== null && selectedFilters.durationMin !== undefined)
+    ? selectedFilters.durationMin
+    : dataMin;
+  const currentMax = (selectedFilters.durationMax !== null && selectedFilters.durationMax !== undefined)
+    ? selectedFilters.durationMax
+    : dataMax;
+
+  minSlider.value = currentMin;
+  maxSlider.value = currentMax;
 
   // Update labels
   labelMin.textContent = Math.round(dataMin);
   labelMid.textContent = Math.round((dataMin + dataMax) / 2);
   labelMax.textContent = Math.round(dataMax);
 
-  // Update input boxes
-  minInput.value = Math.round(dataMin);
-  maxInput.value = Math.round(dataMax);
+  // Update input boxes with current values
+  minInput.value = Math.round(currentMin);
+  maxInput.value = Math.round(currentMax);
 
-  // Initialize filters
-  selectedFilters.durationMin = dataMin;
-  selectedFilters.durationMax = dataMax;
+  // Update filters with current values
+  selectedFilters.durationMin = currentMin;
+  selectedFilters.durationMax = currentMax;
 
   // Function to update the visual range overlay
   const updateRange = () => {
