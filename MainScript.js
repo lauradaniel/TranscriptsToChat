@@ -992,13 +992,14 @@ async function loadProjectsToChatDropdown() {
         const response = await fetch(`${API_BASE}/api/projects`);
         const result = await response.json();
         const dropdownList = document.getElementById('chatProjectDropdown');
-        
+
         if (result.success && result.projects) {
             const successfulProjects = result.projects.filter(p => p.total_records > 0);
-            successfulProjects.sort((a, b) => a.name.localeCompare(b.name));
+            // Projects are already ordered by created_at DESC from backend (newest first)
+            // No need to sort alphabetically - keep chronological order
             allChatProjects = successfulProjects;
             dropdownList.innerHTML = '';
-            
+
             if (successfulProjects.length === 0) {
                 dropdownList.innerHTML = '<li class="no-results">No completed projects available.</li>';
             } else {
@@ -1009,6 +1010,10 @@ async function loadProjectsToChatDropdown() {
                     li.onclick = () => selectChatProject(project.id, project.name);
                     dropdownList.appendChild(li);
                 });
+
+                // Auto-select the latest (first) project and load its data
+                const latestProject = successfulProjects[0];
+                selectChatProject(latestProject.id, latestProject.name);
             }
             setupChatDropdownEvents();
         }
