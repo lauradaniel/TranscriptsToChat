@@ -68,36 +68,42 @@ class CSVProcessor:
             return False, errors
         
         try:
-            with open(csv_path, 'r', encoding='utf-8') as f:
-                # Auto-detect delimiter (comma or tab)
-                sample = f.read(1024)
+            # Use utf-8-sig encoding to automatically handle UTF-8 BOM
+            with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                # Read first line to detect delimiter
+                first_line = f.readline()
                 f.seek(0)
-                
-                # Try to detect delimiter
-                sniffer = csv.Sniffer()
-                try:
-                    delimiter = sniffer.sniff(sample).delimiter
-                except:
+
+                # Explicit delimiter detection
+                if '\t' in first_line and ',' not in first_line:
+                    # Tab-separated
+                    delimiter = '\t'
+                    self.detected_delimiter = 'TAB'
+                elif ',' in first_line:
+                    # Comma-separated (most common)
                     delimiter = ','
-                
+                    self.detected_delimiter = 'COMMA'
+                else:
+                    # Fallback: try csv.Sniffer
+                    f.seek(0)
+                    sample = f.read(1024)
+                    f.seek(0)
+                    sniffer = csv.Sniffer()
+                    try:
+                        delimiter = sniffer.sniff(sample).delimiter
+                        self.detected_delimiter = 'TAB' if delimiter == '\t' else 'COMMA'
+                    except:
+                        # Default to comma
+                        delimiter = ','
+                        self.detected_delimiter = 'COMMA'
+
                 # Read headers with detected delimiter
                 reader = csv.DictReader(f, delimiter=delimiter)
                 headers = reader.fieldnames
-                
+
                 if not headers:
                     errors.append("CSV file is empty or has no headers")
                     return False, errors
-                
-                # If only 1 column found with comma, try tab instead
-                if len(headers) == 1 and delimiter == ',':
-                    print("DEBUG: Only 1 column with comma, trying tab delimiter")
-                    f.seek(0)
-                    delimiter = '\t'
-                    reader = csv.DictReader(f, delimiter=delimiter)
-                    headers = reader.fieldnames
-                
-                # Store delimiter for debugging
-                self.detected_delimiter = 'TAB' if delimiter == '\t' else 'COMMA'
                 
                 # Normalize headers (strip whitespace)
                 headers = [h.strip() for h in headers]
@@ -255,27 +261,35 @@ class CSVProcessor:
         conversations = []
         
         try:
-            with open(csv_path, 'r', encoding='utf-8') as f:
-                # Auto-detect delimiter (comma or tab)
-                sample = f.read(1024)
-                f.seek(0)
-                sniffer = csv.Sniffer()
-                try:
-                    delimiter = sniffer.sniff(sample).delimiter
-                    print(f"   Detected delimiter: {'TAB' if delimiter == chr(9) else 'COMMA'}")
-                except:
-                    delimiter = ','
-                    print(f"   Using default delimiter: COMMA")
-                
-                # Read first line to check column count
+            # Use utf-8-sig encoding to automatically handle UTF-8 BOM
+            with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                # Read first line to detect delimiter
                 first_line = f.readline()
                 f.seek(0)
-                
-                # If only 1 field with comma, try tab
-                if delimiter == ',' and ',' not in first_line and '\t' in first_line:
+
+                # Explicit delimiter detection
+                if '\t' in first_line and ',' not in first_line:
+                    # Tab-separated
                     delimiter = '\t'
-                    print(f"   Switching to TAB delimiter (detected tabs in header)")
-                
+                    print(f"   Detected delimiter: TAB")
+                elif ',' in first_line:
+                    # Comma-separated (most common)
+                    delimiter = ','
+                    print(f"   Detected delimiter: COMMA")
+                else:
+                    # Fallback: try csv.Sniffer
+                    f.seek(0)
+                    sample = f.read(1024)
+                    f.seek(0)
+                    sniffer = csv.Sniffer()
+                    try:
+                        delimiter = sniffer.sniff(sample).delimiter
+                        print(f"   Detected delimiter: {'TAB' if delimiter == chr(9) else 'COMMA'} (via Sniffer)")
+                    except:
+                        # Default to comma
+                        delimiter = ','
+                        print(f"   Using default delimiter: COMMA")
+
                 reader = csv.DictReader(f, delimiter=delimiter)
                 
                 for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is row 1)
