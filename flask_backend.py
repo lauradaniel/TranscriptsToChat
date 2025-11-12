@@ -1200,21 +1200,21 @@ def prepare_chat_context_from_csv(csv_path, filters):
     print(f"  Total transcripts: {total_transcripts}")
 
     # CHAT QUERY SAMPLING STRATEGY
-    # Conservative limit to ensure we stay well within model token limits
+    # The CSV preparation already limits to 200 transcripts max
+    # This ensures we stay within model token limits
     # Model: Claude 3.5 Sonnet has 200k token context window
-    # We need headroom for: system prompt + user question + response
-    MAX_CHAT_QUERY_TRANSCRIPTS = 20
+    MAX_CHAT_QUERY_TRANSCRIPTS = 200
 
     if total_transcripts <= MAX_CHAT_QUERY_TRANSCRIPTS:
-        # Small group: include all transcripts
+        # Include all transcripts from the CSV
         sampled_df = df
         sampling_note = ""
         print(f"  Including all {total_transcripts} transcripts")
     else:
-        # Large group: randomly sample to stay within token limits
-        # Random sampling provides representative sample across entire dataset
+        # This case shouldn't happen since CSV creation already limits to 200
+        # But keeping as safeguard - randomly sample if CSV somehow has more
         sampled_df = df.sample(n=MAX_CHAT_QUERY_TRANSCRIPTS, random_state=None)
-        sampling_note = f"\n(Showing random sample of {MAX_CHAT_QUERY_TRANSCRIPTS} from {total_transcripts} total transcripts for optimal AI analysis)"
+        sampling_note = f"\n(Showing random sample of {MAX_CHAT_QUERY_TRANSCRIPTS} from {total_transcripts} total transcripts)"
         print(f"  🎲 Randomly sampling {MAX_CHAT_QUERY_TRANSCRIPTS} of {total_transcripts} transcripts")
 
     num_sampled = len(sampled_df)
@@ -1248,7 +1248,7 @@ def prepare_chat_context_from_csv(csv_path, filters):
     context_str = "\n".join(context_parts)
 
     print(f"  Context size: {len(context_str):,} characters (~{len(context_str)//4:,} tokens)")
-    print(f"  💡 Chat queries limited to max {MAX_CHAT_QUERY_TRANSCRIPTS} transcripts to prevent token limit errors")
+    print(f"  💡 Using up to {num_sampled} transcripts from CSV (max {MAX_CHAT_QUERY_TRANSCRIPTS} allowed)")
 
     return context_str, num_sampled, total_transcripts
 
