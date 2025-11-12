@@ -105,6 +105,14 @@ function showView(viewName) {
 function openCreateProject() {
   const panel = document.getElementById('createProjectPanel');
   if (!panel) return;
+
+  // Clear old data when opening the panel
+  document.querySelector('[name="projectName"]').value = '';
+  document.querySelector('[name="projectDescription"]').value = '';
+  document.getElementById('fileDropRef').value = '';
+  uploadedCSVFile = null;
+  document.querySelector('.drag-file-label').innerHTML = 'Drag files here or <span>Browse</span>';
+
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
   panel.setAttribute('aria-hidden', 'false');
@@ -158,7 +166,7 @@ let visibleColumns = {
   Category: true,
   Topic: true,
   Intent: true,
-  Agent_Task: true
+  Agent_Task: false
 };
 
 async function openFilterPanel() {
@@ -813,8 +821,10 @@ async function handleSaveProject() {
         fileName: uploadedCSVFile.name,
         errors: result.errors || []
       });
+      // Auto-close panel after failure
+      closeCreateProject();
     }
-    
+
   } catch (error) {
     console.error('Network error:', error);
     addFailedResultToTable({
@@ -822,6 +832,8 @@ async function handleSaveProject() {
       fileName: uploadedCSVFile.name,
       errors: ['Failed to connect to server. Make sure Flask backend is running.']
     });
+    // Auto-close panel after error
+    closeCreateProject();
   } finally {
     saveButton.querySelector('.ngnx-button__label').textContent = originalText;
     saveButton.disabled = false;

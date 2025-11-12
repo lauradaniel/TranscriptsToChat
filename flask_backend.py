@@ -1095,6 +1095,16 @@ def create_transcript_csv(project_id, filters, transcript_refs):
 
     # Always create fresh CSV (no caching) to ensure data accuracy
     print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
+
+    # RANDOM SAMPLING: If >200 transcripts, randomly select 200
+    # This prevents unnecessary processing during chat preparation
+    MAX_TRANSCRIPTS_FOR_CHAT = 200
+    original_count = len(transcript_refs)
+    if original_count > MAX_TRANSCRIPTS_FOR_CHAT:
+        import random
+        transcript_refs = random.sample(transcript_refs, MAX_TRANSCRIPTS_FOR_CHAT)
+        print(f"  🎲 Randomly sampled {MAX_TRANSCRIPTS_FOR_CHAT} from {original_count} total transcripts")
+
     print(f"  Processing {len(transcript_refs)} transcript files...")
 
     # Prepare CSV data - ONE ROW PER TRANSCRIPT
@@ -1189,33 +1199,23 @@ def prepare_chat_context_from_csv(csv_path, filters):
     print(f"\n📊 CSV Data Loaded (OPTIMIZED FORMAT):")
     print(f"  Total transcripts: {total_transcripts}")
 
-    # IMPROVED SAMPLING STRATEGY
-    # With new format, we can include many more transcripts in same token budget!
-    # Previous format: max ~75 transcripts
-    # New format: can handle 200-300 transcripts in 200k token window
+    # CHAT QUERY SAMPLING STRATEGY
+    # Conservative limit to ensure we stay well within model token limits
+    # Model: Claude 3.5 Sonnet has 200k token context window
+    # We need headroom for: system prompt + user question + response
+    MAX_CHAT_QUERY_TRANSCRIPTS = 20
 
-    if total_transcripts <= 100:
-        # Small/Medium group: include all
+    if total_transcripts <= MAX_CHAT_QUERY_TRANSCRIPTS:
+        # Small group: include all transcripts
         sampled_df = df
         sampling_note = ""
         print(f"  Including all {total_transcripts} transcripts")
-    elif total_transcripts <= 300:
-        # Large group: sample 200 transcripts
-        sampled_df = df.head(200)
-        sampling_note = f"\n(Showing first 200 of {total_transcripts} total transcripts)"
-        print(f"  Sampling 200 of {total_transcripts} transcripts")
-    elif total_transcripts <= 500:
-        # Very large group: evenly sample 200 transcripts
-        step = total_transcripts // 200
-        sampled_df = df.iloc[::step].head(200)
-        sampling_note = f"\n(Showing representative sample of 200 from {total_transcripts} total transcripts)"
-        print(f"  Evenly sampling 200 of {total_transcripts} transcripts")
     else:
-        # Massive datasets: stratified sample of 250
-        step = total_transcripts // 250
-        sampled_df = df.iloc[::step].head(250)
-        sampling_note = f"\n(Showing stratified sample of 250 from {total_transcripts} total transcripts)"
-        print(f"  Stratified sampling 250 of {total_transcripts} transcripts")
+        # Large group: randomly sample to stay within token limits
+        # Random sampling provides representative sample across entire dataset
+        sampled_df = df.sample(n=MAX_CHAT_QUERY_TRANSCRIPTS, random_state=None)
+        sampling_note = f"\n(Showing random sample of {MAX_CHAT_QUERY_TRANSCRIPTS} from {total_transcripts} total transcripts for optimal AI analysis)"
+        print(f"  🎲 Randomly sampling {MAX_CHAT_QUERY_TRANSCRIPTS} of {total_transcripts} transcripts")
 
     num_sampled = len(sampled_df)
 
@@ -1248,7 +1248,7 @@ def prepare_chat_context_from_csv(csv_path, filters):
     context_str = "\n".join(context_parts)
 
     print(f"  Context size: {len(context_str):,} characters (~{len(context_str)//4:,} tokens)")
-    print(f"  💡 New format allows {num_sampled} transcripts vs ~75 with old format!")
+    print(f"  💡 Chat queries limited to max {MAX_CHAT_QUERY_TRANSCRIPTS} transcripts to prevent token limit errors")
 
     return context_str, num_sampled, total_transcripts
 
