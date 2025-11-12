@@ -769,6 +769,7 @@ def internal_error(error):
 
 # Path conversion configuration - UPDATE THESE based on your setup
 PATH_MAPPINGS = {
+     '\\\\vaod177enlext02\\Media': '/mnt/Media'
     # Format: 'UNC_prefix': 'local_mount_path'
     # Example: '\\\\VAOD177APP05\\Media': '/mnt/media'
     # Add your mappings here:
