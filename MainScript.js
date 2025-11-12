@@ -105,6 +105,14 @@ function showView(viewName) {
 function openCreateProject() {
   const panel = document.getElementById('createProjectPanel');
   if (!panel) return;
+
+  // Clear old data when opening the panel
+  document.querySelector('[name="projectName"]').value = '';
+  document.querySelector('[name="projectDescription"]').value = '';
+  document.getElementById('fileDropRef').value = '';
+  uploadedCSVFile = null;
+  document.querySelector('.drag-file-label').innerHTML = 'Drag files here or <span>Browse</span>';
+
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
   panel.setAttribute('aria-hidden', 'false');
@@ -155,10 +163,11 @@ const availableColumns = [
 ];
 
 let visibleColumns = {
-  Category: true,
-  Topic: true,
-  Intent: true,
-  Agent_Task: true
+  Category: false,
+  Topic: false,
+  Intent: false,
+  Agent_Task: false,
+  Volume: false
 };
 
 async function openFilterPanel() {
@@ -813,8 +822,10 @@ async function handleSaveProject() {
         fileName: uploadedCSVFile.name,
         errors: result.errors || []
       });
+      // Auto-close panel after failure
+      closeCreateProject();
     }
-    
+
   } catch (error) {
     console.error('Network error:', error);
     addFailedResultToTable({
@@ -822,6 +833,8 @@ async function handleSaveProject() {
       fileName: uploadedCSVFile.name,
       errors: ['Failed to connect to server. Make sure Flask backend is running.']
     });
+    // Auto-close panel after error
+    closeCreateProject();
   } finally {
     saveButton.querySelector('.ngnx-button__label').textContent = originalText;
     saveButton.disabled = false;
@@ -1237,12 +1250,13 @@ function createChatSummaryTable(data, projectName, message = null) {
         { key: 'AI_Chat', label: 'AI Chat', sortable: false, isIcon: true }
     ];
 
-    // Filter columns based on visibility settings (always show Volume and AI_Chat)
+    // Filter columns based on visibility settings (only show AI_Chat by default)
     const columnDefinitions = allColumnDefinitions.filter(col => {
-        if (col.key === 'Volume' || col.key === 'AI_Chat') {
-            return true; // Always show Volume and AI Chat
+        if (col.key === 'AI_Chat') {
+            return true; // Always show AI Chat
         }
-        return visibleColumns[col.key] !== false;
+        // For other columns (including Volume), only show if explicitly enabled by user
+        return visibleColumns[col.key] === true;
     });
 
     const generateTableHTML = (data, columns, headerKeys) => {
