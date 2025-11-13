@@ -3,7 +3,7 @@ Flask Backend API for Transcript Analysis Project
 Integrates with the existing HTML/JS frontend
 """
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import os
 import json
@@ -20,17 +20,31 @@ from csv_processor import CSVProcessor
 from main_integration import create_project_from_csv
 from bedrock import BedrockClient
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)  # Enable CORS for frontend communication
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
-DB_PATH = '/tmp/transcript_projects.db'  # Use local path, not NFS
+DB_PATH = 'data/transcript_projects.db'  # Changed from /tmp to persistent location
 MAX_CHAT_TRANSCRIPTS = 200  # Maximum transcripts to process for AI chat to stay within token limits
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs('data', exist_ok=True)  # Ensure data directory exists for database
 
 # Initialize database
 db = TranscriptDatabase(DB_PATH)
+
+
+# Serve frontend files
+@app.route('/')
+def serve_index():
+    """Serve the main index.html file"""
+    return send_from_directory('.', 'index.html')
+
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files (CSS, JS, images, etc.)"""
+    return send_from_directory('.', path)
 
 
 @app.route('/api/health', methods=['GET'])
@@ -1865,26 +1879,33 @@ The user is asking about the transcripts above. Answer their questions accuratel
 
 
 if __name__ == '__main__':
-    print("="*60)
-    print("TRANSCRIPT ANALYSIS - FLASK BACKEND")
-    print("="*60)
+    import socket
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+
+    print("="*70)
+    print("🚀 TRANSCRIPT ANALYSIS - FULL STACK APPLICATION")
+    print("="*70)
     print(f"Database: {DB_PATH}")
     print(f"Upload folder: {UPLOAD_FOLDER}")
-    print(f"Server running on: http://localhost:5000")
-    print("="*60)
-    print("\nAvailable endpoints:")
+    print(f"Max transcripts for AI chat: {MAX_CHAT_TRANSCRIPTS}")
+    print("="*70)
+    print("\n📍 ACCESS THE APPLICATION:")
+    print(f"  Local:          http://localhost:5000")
+    print(f"  Network:        http://{local_ip}:5000")
+    print(f"  External:       http://<your-public-ip>:5000")
+    print("\n💡 Share the Network URL with other users on your local network!")
+    print("="*70)
+    print("\n📡 Available API endpoints:")
     print("  GET  /api/health")
     print("  GET  /api/projects")
     print("  POST /api/projects")
     print("  GET  /api/projects/<id>")
-    print("  GET  /api/projects/<id>/columns")
-    print("  GET  /api/projects/<id>/conversations")
     print("  GET  /api/projects/<id>/summary")
-    print("  POST /api/projects/<id>/report")
-    print("  POST /api/projects/<id>/chat/context")
-    print("  POST /api/projects/<id>/chat/verify   (NEW - verify file access)")
-    print("  POST /api/projects/<id>/chat/query    (AI Chat)")
-    print("  GET  /api/projects/<id>/stats")
-    print("="*60)
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("  POST /api/projects/<id>/chat/prepare")
+    print("  POST /api/projects/<id>/chat/query")
+    print("="*70)
+    print("\n⚠️  IMPORTANT: Make sure port 5000 is open in your firewall!")
+    print("="*70)
+
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
