@@ -102,16 +102,21 @@ function showView(viewName) {
 
 /* === 2. API & PROJECT CREATION/LOADING (ADMIN VIEW) === */
 
-function openCreateProject() {
-  const panel = document.getElementById('createProjectPanel');
-  if (!panel) return;
-
-  // Clear old data when opening the panel
+function clearProjectForm() {
+  // Helper function to clear all form data
   document.querySelector('[name="projectName"]').value = '';
   document.querySelector('[name="projectDescription"]').value = '';
   document.getElementById('fileDropRef').value = '';
   uploadedCSVFile = null;
   document.querySelector('.drag-file-label').innerHTML = 'Drag files here or <span>Browse</span>';
+}
+
+function openCreateProject() {
+  const panel = document.getElementById('createProjectPanel');
+  if (!panel) return;
+
+  // Clear old data when opening the panel
+  clearProjectForm();
 
   panel.classList.remove('hidden');
   panel.classList.add('is-open');
@@ -163,11 +168,11 @@ const availableColumns = [
 ];
 
 let visibleColumns = {
-  Category: false,
-  Topic: false,
-  Intent: false,
+  Category: true,
+  Topic: true,
+  Intent: true,
   Agent_Task: false,
-  Volume: false
+  Volume: true
 };
 
 async function openFilterPanel() {
@@ -808,21 +813,19 @@ async function handleSaveProject() {
         total_records: result.stats.valid_rows,
         created_at: new Date().toISOString()
       }, true);
-      
+
+      // Clear form data and close panel after success
+      clearProjectForm();
       closeCreateProject();
-      document.querySelector('[name="projectName"]').value = '';
-      document.querySelector('[name="projectDescription"]').value = '';
-      document.getElementById('fileDropRef').value = '';
-      uploadedCSVFile = null;
-      document.querySelector('.drag-file-label').innerHTML = 'Drag files here or <span>Browse</span>';
-      
+
     } else {
       addFailedResultToTable({
         projectName: projectName,
         fileName: uploadedCSVFile.name,
         errors: result.errors || []
       });
-      // Auto-close panel after failure
+      // Clear form data and auto-close panel after failure
+      clearProjectForm();
       closeCreateProject();
     }
 
@@ -833,7 +836,8 @@ async function handleSaveProject() {
       fileName: uploadedCSVFile.name,
       errors: ['Failed to connect to server. Make sure Flask backend is running.']
     });
-    // Auto-close panel after error
+    // Clear form data and auto-close panel after error
+    clearProjectForm();
     closeCreateProject();
   } finally {
     saveButton.querySelector('.ngnx-button__label').textContent = originalText;
