@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:5000';
+// Dynamic API base - works for both local and remote access
+const API_BASE = window.location.origin;
 
 let transcriptsFolder = { handle: null, name: '', path: '' };
 let uploadedCSVFile = null;
