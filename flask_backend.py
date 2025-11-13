@@ -11,6 +11,7 @@ import sys
 import platform
 import csv
 import hashlib
+import random
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -25,6 +26,7 @@ CORS(app)  # Enable CORS for frontend communication
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 DB_PATH = '/tmp/transcript_projects.db'  # Use local path, not NFS
+MAX_CHAT_TRANSCRIPTS = 20  # Maximum transcripts to process for AI chat to stay within token limits
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize database
@@ -1066,13 +1068,22 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     - Better LLM comprehension (natural dialogue vs fragmented CSV)
     - Faster processing
 
+    SMART SAMPLING - Only processes up to MAX_CHAT_TRANSCRIPTS to save time:
+    - If <=20 transcripts: Process all
+    - If >20 transcripts: Randomly sample 20 (no need to process thousands!)
+
     Args:
         project_id: Project ID
         filters: Dict with intent, topic, category, agent_task
         transcript_refs: List of (interaction_id, file_path) tuples
 
     Returns:
-        str: Path to created CSV file
+        dict: {
+            'csv_path': str path to CSV file,
+            'total_count': int total transcripts available,
+            'sampled_count': int transcripts actually processed,
+            'was_sampled': bool whether sampling was applied
+        }
     """
     # Get project name from database
     with TranscriptDatabase(DB_PATH) as local_db:
@@ -1094,9 +1105,21 @@ def create_transcript_csv(project_id, filters, transcript_refs):
         print(f"  🗑️  Deleting old CSV: {csv_path}")
         csv_path.unlink()
 
-    # Always create fresh CSV (no caching) to ensure data accuracy
-    print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
-    print(f"  Processing {len(transcript_refs)} transcript files...")
+    # APPLY SMART SAMPLING BEFORE PROCESSING (performance optimization!)
+    total_count = len(transcript_refs)
+    was_sampled = False
+
+    if total_count > MAX_CHAT_TRANSCRIPTS:
+        # Randomly sample to MAX_CHAT_TRANSCRIPTS
+        transcript_refs = random.sample(transcript_refs, MAX_CHAT_TRANSCRIPTS)
+        was_sampled = True
+        print(f"\n🎯 SMART SAMPLING APPLIED:")
+        print(f"  Total available: {total_count} transcripts")
+        print(f"  Randomly sampled: {MAX_CHAT_TRANSCRIPTS} transcripts")
+        print(f"  Time saved: {total_count - MAX_CHAT_TRANSCRIPTS} transcripts skipped!")
+    else:
+        print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
+        print(f"  Processing all {total_count} transcript files...")
 
     # Prepare CSV data - ONE ROW PER TRANSCRIPT
     csv_rows = []
@@ -1156,23 +1179,33 @@ def create_transcript_csv(project_id, filters, transcript_refs):
         print(f"  Total rows: {len(csv_rows)} (one per transcript)")
         print(f"  Processed: {processed_count} transcripts")
         print(f"  Failed: {failed_count} transcripts")
+        if was_sampled:
+            print(f"  🎯 Smart sampling saved processing {total_count - len(csv_rows)} transcripts!")
         print(f"  💡 New format is 60-75% more token-efficient!")
     else:
         print(f"  ❌ No data to write to CSV")
         return None
 
-    return str(csv_path)
+    return {
+        'csv_path': str(csv_path),
+        'total_count': total_count,
+        'sampled_count': len(csv_rows),
+        'was_sampled': was_sampled
+    }
 
 
 def prepare_chat_context_from_csv(csv_path, filters):
     """
-    Prepare AI context from CSV file with smart sampling.
+    Prepare AI context from CSV file.
 
     NEW OPTIMIZED VERSION - Works with one-row-per-transcript format.
     Can fit 3-4x more transcripts in the same token budget!
 
+    NOTE: Sampling is now done during CSV creation, not here.
+    This function just formats the CSV data into context for the AI.
+
     Args:
-        csv_path: Path to the transcript CSV file
+        csv_path: Path to the transcript CSV file (already sampled)
         filters: Dict with intent, topic, category, agent_task
 
     Returns:
@@ -1184,29 +1217,15 @@ def prepare_chat_context_from_csv(csv_path, filters):
     if df.empty:
         return "No transcript data available.", 0, 0
 
-    # Total transcripts = total rows (since one row = one transcript now!)
+    # CSV is already sampled during creation, so just use all rows
     total_transcripts = len(df)
+    sampled_df = df
+    num_sampled = len(sampled_df)
 
     print(f"\n📊 CSV Data Loaded (OPTIMIZED FORMAT):")
-    print(f"  Total transcripts: {total_transcripts}")
+    print(f"  Using all {total_transcripts} transcripts from pre-sampled CSV")
 
-    # CHAT SAMPLING STRATEGY - MAXIMUM 20 TRANSCRIPTS
-    # This ensures we stay well within token limits for chat queries
-    MAX_CHAT_TRANSCRIPTS = 20
-
-    if total_transcripts <= MAX_CHAT_TRANSCRIPTS:
-        # Small group: include all transcripts
-        sampled_df = df
-        sampling_note = ""
-        print(f"  Including all {total_transcripts} transcripts")
-    else:
-        # Large group: randomly sample MAX_CHAT_TRANSCRIPTS transcripts
-        # Use random sampling to get a representative sample from the entire dataset
-        sampled_df = df.sample(n=MAX_CHAT_TRANSCRIPTS, random_state=None)
-        sampling_note = f"\n(Showing random sample of {MAX_CHAT_TRANSCRIPTS} from {total_transcripts} total transcripts)"
-        print(f"  Randomly sampling {MAX_CHAT_TRANSCRIPTS} of {total_transcripts} transcripts")
-
-    num_sampled = len(sampled_df)
+    sampling_note = ""
 
     # Build context - ULTRA-SIMPLIFIED format
     context_parts = [
@@ -1427,9 +1446,9 @@ def prepare_chat(project_id):
             }), 404
 
         # Create CSV file (this is the time-consuming part)
-        csv_path = create_transcript_csv(project_id, filters, transcript_refs)
+        csv_result = create_transcript_csv(project_id, filters, transcript_refs)
 
-        if not csv_path or not os.path.exists(csv_path):
+        if not csv_result or not os.path.exists(csv_result['csv_path']):
             return jsonify({
                 'success': False,
                 'error': 'Failed to create transcript CSV file'
@@ -1441,7 +1460,9 @@ def prepare_chat(project_id):
         return jsonify({
             'success': True,
             'csv_created': True,
-            'transcript_count': len(transcript_refs),
+            'transcript_count': csv_result['sampled_count'],
+            'total_count': csv_result['total_count'],
+            'was_sampled': csv_result['was_sampled'],
             'message': 'Chat context prepared successfully'
         })
 
@@ -1695,16 +1716,16 @@ def chat_query(project_id):
             }), 404
 
         # Step 1: Create or load CSV file
-        csv_path = create_transcript_csv(project_id, filters, transcript_refs)
+        csv_result = create_transcript_csv(project_id, filters, transcript_refs)
 
-        if not csv_path or not os.path.exists(csv_path):
+        if not csv_result or not os.path.exists(csv_result['csv_path']):
             return jsonify({
                 'success': False,
                 'error': 'Failed to create transcript CSV file'
             }), 500
 
         # Step 2: Prepare context from CSV
-        context, sampled_count, total_count = prepare_chat_context_from_csv(csv_path, filters)
+        context, sampled_count, total_count = prepare_chat_context_from_csv(csv_result['csv_path'], filters)
 
         print(f"\n📝 Context Preparation Complete:")
         print(f"  Transcripts sampled for AI: {sampled_count} (from {total_count} total)")
