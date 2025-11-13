@@ -26,7 +26,7 @@ CORS(app)  # Enable CORS for frontend communication
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 DB_PATH = '/tmp/transcript_projects.db'  # Use local path, not NFS
-MAX_CHAT_TRANSCRIPTS = 20  # Maximum transcripts to process for AI chat to stay within token limits
+MAX_CHAT_TRANSCRIPTS = 200  # Maximum transcripts to process for AI chat to stay within token limits
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize database
@@ -1069,8 +1069,8 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     - Faster processing
 
     SMART SAMPLING - Only processes up to MAX_CHAT_TRANSCRIPTS to save time:
-    - If <=20 transcripts: Process all
-    - If >20 transcripts: Randomly sample 20 (no need to process thousands!)
+    - If <=200 transcripts: Process all
+    - If >200 transcripts: Randomly sample 200 (no need to process thousands!)
 
     Args:
         project_id: Project ID

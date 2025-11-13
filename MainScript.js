@@ -1641,8 +1641,8 @@ async function openAIChat(intent, topic, category, agentTask) {
 
     // Show loading indicator while preparing chat context
     if (messagesContainer) {
-        const loadingMessage = rowData.Volume > 20
-            ? `Sampling from ${rowData.Volume} transcripts (max 20 for AI chat)...`
+        const loadingMessage = rowData.Volume > 200
+            ? `Sampling from ${rowData.Volume} transcripts (max 200 for AI chat)...`
             : `Loading ${rowData.Volume} transcript${rowData.Volume !== 1 ? 's' : ''}...`;
 
         messagesContainer.innerHTML = `
