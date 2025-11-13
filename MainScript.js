@@ -1117,10 +1117,11 @@ function selectChatProject(projectId, projectName) {
     input.setAttribute('data-selected-id', projectId);
     dropdownList.classList.add('hidden');
     document.getElementById('chatDropdownArrow')?.classList.remove('open');
-    
+
     console.log(`Project selected for chat: ID ${projectId}, Name ${projectName}`);
-    
-    fetchAndDisplayProjectSummary(projectId, projectName);
+
+    // Pass visibleColumns to ensure proper grouping based on visible columns
+    fetchAndDisplayProjectSummary(projectId, projectName, null, visibleColumns);
 }
 
 /**
