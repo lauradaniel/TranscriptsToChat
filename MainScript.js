@@ -1133,11 +1133,24 @@ function selectChatProject(projectId, projectName) {
 async function fetchAndDisplayProjectSummary(projectId, projectName, filters = null, visibleCols = null) {
     const landingMain = document.querySelector('.landing-main');
 
-    // Remove any existing temporary content (no loading message)
+    // Remove any existing temporary content
     const tempContent = document.getElementById('temporaryViewContent');
     if (tempContent) {
         tempContent.remove();
     }
+
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'temporaryViewContent';
+    loadingDiv.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 50px;';
+    loadingDiv.innerHTML = `
+        <div style="text-align: center;">
+            <div class="ai-chat-loading-spinner" style="margin: 0 auto 20px auto;"></div>
+            <h2 style="color: var(--ngnx-color-application-glue-630); margin-bottom: 10px;">Loading Project Data...</h2>
+            <p style="color: var(--ngnx-color-application-glue-500);">Loading transcript summary for: <strong>${projectName}</strong></p>
+        </div>
+    `;
+    landingMain.appendChild(loadingDiv);
 
     try {
         // Build query parameters from filters
