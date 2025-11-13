@@ -2,11 +2,20 @@
 
 ## ✅ Quick Start (Now Only ONE Command!)
 
-Instead of running two commands, you now only need:
+### Option A: Use the startup script (Recommended)
 
 ```bash
+./start.sh
+```
+
+### Option B: Direct Python command
+
+```bash
+cd /home/user/TranscriptsToChat
 python3 flask_backend.py
 ```
+
+**Note**: If you get a "database is locked" error, use the startup script (`./start.sh`) which sets the correct Python path.
 
 That's it! Flask now serves both the API and the frontend.
 
