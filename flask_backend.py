@@ -1149,37 +1149,51 @@ def create_transcript_csv(project_id, filters, transcript_refs, force_recreate=F
     # CSV doesn't exist or force_recreate is True - create it
     print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
 
-    # APPLY SMART SAMPLING BEFORE PROCESSING (performance optimization!)
+    # SMART SAMPLING WITH MISSING FILE HANDLING
+    # Strategy: Keep sampling until we have MAX_CHAT_TRANSCRIPTS valid transcripts
+    # or until we've exhausted all available references
     total_count = len(transcript_refs)
-    was_sampled = False
+    was_sampled = total_count > MAX_CHAT_TRANSCRIPTS
+    target_count = min(MAX_CHAT_TRANSCRIPTS, total_count)
 
-    if total_count > MAX_CHAT_TRANSCRIPTS:
-        # Randomly sample to MAX_CHAT_TRANSCRIPTS
-        transcript_refs = random.sample(transcript_refs, MAX_CHAT_TRANSCRIPTS)
-        was_sampled = True
-        print(f"🎯 SMART SAMPLING APPLIED:")
+    # Shuffle references for randomness
+    import random
+    shuffled_refs = transcript_refs.copy()
+    random.shuffle(shuffled_refs)
+
+    if was_sampled:
+        print(f"🎯 SMART SAMPLING WITH MISSING FILE HANDLING:")
         print(f"  Total available: {total_count} transcripts")
-        print(f"  Randomly sampled: {MAX_CHAT_TRANSCRIPTS} transcripts")
-        print(f"  Time saved: {total_count - MAX_CHAT_TRANSCRIPTS} transcripts skipped!")
+        print(f"  Target: {MAX_CHAT_TRANSCRIPTS} valid transcripts")
+        print(f"  Will continue sampling until target is reached or all files exhausted")
     else:
         print(f"  Processing all {total_count} transcript files...")
 
     # Prepare CSV data - ONE ROW PER TRANSCRIPT
     csv_rows = []
-    processed_count = 0
+    attempted_count = 0
     failed_count = 0
 
-    for interaction_id, file_path in transcript_refs:
+    # Process references until we have enough valid transcripts OR run out of references
+    for interaction_id, file_path in shuffled_refs:
+        # Stop if we've reached our target
+        if len(csv_rows) >= target_count:
+            break
+
+        attempted_count += 1
+
         # Load JSON transcript
         transcript_data = load_transcript_file(file_path)
         if not transcript_data:
             failed_count += 1
+            print(f"  ⚠️  Warning: Transcript file not found or unreadable: {file_path}")
             continue
 
         # Clean transcript to get conversation turns
         cleaned = clean_transcript(transcript_data)
         if not cleaned:
             failed_count += 1
+            print(f"  ⚠️  Warning: Could not clean transcript: {file_path}")
             continue
 
         # Extract filename from interaction_id or file_path
@@ -1209,9 +1223,9 @@ def create_transcript_csv(project_id, filters, transcript_refs, force_recreate=F
             'Conversation': full_conversation
         })
 
-        processed_count += 1
-        if processed_count % 10 == 0:
-            print(f"  Processed {processed_count}/{len(transcript_refs)} transcripts...")
+        # Progress indicator
+        if len(csv_rows) % 10 == 0:
+            print(f"  Progress: {len(csv_rows)}/{target_count} valid transcripts collected (attempted {attempted_count}, failed {failed_count})")
 
     # Write CSV file
     if csv_rows:
@@ -1219,14 +1233,17 @@ def create_transcript_csv(project_id, filters, transcript_refs, force_recreate=F
         df.to_csv(csv_path, index=False, encoding='utf-8')
 
         print(f"  ✅ CSV created successfully!")
-        print(f"  Total rows: {len(csv_rows)} (one per transcript)")
-        print(f"  Processed: {processed_count} transcripts")
-        print(f"  Failed: {failed_count} transcripts")
+        print(f"  Valid transcripts collected: {len(csv_rows)} (one per transcript)")
+        print(f"  Attempted: {attempted_count} files")
+        print(f"  Failed/Missing: {failed_count} files")
         if was_sampled:
-            print(f"  🎯 Smart sampling saved processing {total_count - len(csv_rows)} transcripts!")
+            if len(csv_rows) >= MAX_CHAT_TRANSCRIPTS:
+                print(f"  🎯 Successfully reached target of {MAX_CHAT_TRANSCRIPTS} valid transcripts!")
+            else:
+                print(f"  ⚠️  Only found {len(csv_rows)}/{MAX_CHAT_TRANSCRIPTS} valid transcripts (exhausted all available files)")
         print(f"  💡 New format is 60-75% more token-efficient!")
     else:
-        print(f"  ❌ No data to write to CSV")
+        print(f"  ❌ No valid transcripts found to write to CSV")
         return None
 
     return {
