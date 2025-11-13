@@ -1100,10 +1100,29 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
     csv_path = data_folder / f"transcripts_{filter_hash}.csv"
 
-    # Delete existing CSV file to force fresh creation (no caching)
+    # Check if CSV already exists (for consistent counts across chat session)
     if csv_path.exists():
-        print(f"  🗑️  Deleting old CSV: {csv_path}")
-        csv_path.unlink()
+        print(f"\n♻️  Reusing existing CSV: {csv_path}")
+        # Load existing CSV to get accurate counts
+        existing_df = pd.read_csv(csv_path)
+        sampled_count = len(existing_df)
+        total_count = len(transcript_refs)
+        was_sampled = total_count > MAX_CHAT_TRANSCRIPTS
+
+        print(f"  ✅ CSV loaded from cache!")
+        print(f"  Transcripts in CSV: {sampled_count}")
+        print(f"  Total available: {total_count}")
+        print(f"  💡 Using cached CSV ensures consistent transcript counts across questions")
+
+        return {
+            'csv_path': str(csv_path),
+            'total_count': total_count,
+            'sampled_count': sampled_count,
+            'was_sampled': was_sampled
+        }
+
+    # CSV doesn't exist, create it
+    print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
 
     # APPLY SMART SAMPLING BEFORE PROCESSING (performance optimization!)
     total_count = len(transcript_refs)
@@ -1113,12 +1132,11 @@ def create_transcript_csv(project_id, filters, transcript_refs):
         # Randomly sample to MAX_CHAT_TRANSCRIPTS
         transcript_refs = random.sample(transcript_refs, MAX_CHAT_TRANSCRIPTS)
         was_sampled = True
-        print(f"\n🎯 SMART SAMPLING APPLIED:")
+        print(f"🎯 SMART SAMPLING APPLIED:")
         print(f"  Total available: {total_count} transcripts")
         print(f"  Randomly sampled: {MAX_CHAT_TRANSCRIPTS} transcripts")
         print(f"  Time saved: {total_count - MAX_CHAT_TRANSCRIPTS} transcripts skipped!")
     else:
-        print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
         print(f"  Processing all {total_count} transcript files...")
 
     # Prepare CSV data - ONE ROW PER TRANSCRIPT
