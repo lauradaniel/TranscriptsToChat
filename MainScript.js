@@ -1641,11 +1641,15 @@ async function openAIChat(intent, topic, category, agentTask) {
 
     // Show loading indicator while preparing chat context
     if (messagesContainer) {
+        const loadingMessage = rowData.Volume > 200
+            ? `Sampling from ${rowData.Volume} transcripts (max 200 for AI chat)...`
+            : `Loading ${rowData.Volume} transcript${rowData.Volume !== 1 ? 's' : ''}...`;
+
         messagesContainer.innerHTML = `
             <div class="ai-chat-message ai-chat-message-system">
                 <div class="ai-chat-message-content">
                     <p><strong>🔄 Preparing chat session...</strong></p>
-                    <p>Loading ${rowData.Volume} transcripts, please wait...</p>
+                    <p>${loadingMessage}</p>
                     <div class="ai-chat-loading-spinner"></div>
                 </div>
             </div>
@@ -1672,6 +1676,11 @@ async function openAIChat(intent, topic, category, agentTask) {
         }
 
         console.log('Chat context prepared successfully!');
+        console.log('Sampling info:', {
+            transcript_count: prepareResult.transcript_count,
+            total_count: prepareResult.total_count,
+            was_sampled: prepareResult.was_sampled
+        });
 
         // Now show the ready message
         if (messagesContainer) {
@@ -1692,11 +1701,19 @@ async function openAIChat(intent, topic, category, agentTask) {
             // Remove trailing <br>
             contextInfo = contextInfo.replace(/<br>$/, '');
 
+            // Build transcript count message with sampling info
+            let transcriptMessage = '';
+            if (prepareResult.was_sampled) {
+                transcriptMessage = `Ask questions about a <strong>random sample of ${prepareResult.transcript_count} transcripts</strong> (from ${prepareResult.total_count} total in this group).`;
+            } else {
+                transcriptMessage = `Ask questions about the ${prepareResult.transcript_count} transcript${prepareResult.transcript_count !== 1 ? 's' : ''} in this group.`;
+            }
+
             messagesContainer.innerHTML = `
                 <div class="ai-chat-message ai-chat-message-system">
                     <div class="ai-chat-message-content">
                         <p><strong>✅ Chat session ready!</strong></p>
-                        <p>Ask questions about the ${prepareResult.transcript_count} transcripts in this group.</p>
+                        <p>${transcriptMessage}</p>
                         <p class="ai-chat-context-info">
                             ${contextInfo}
                         </p>
