@@ -1,11 +1,21 @@
 #!/bin/bash
 # Transcript Analysis Application Startup Script
 
-# Set the working directory
-cd "$(dirname "$0")"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if we're running from the correct location
+if [ ! -f "$SCRIPT_DIR/flask_backend.py" ]; then
+    echo "❌ ERROR: Cannot find flask_backend.py"
+    echo "This script must be in the same directory as flask_backend.py"
+    exit 1
+fi
+
+# Change to the correct directory
+cd "$SCRIPT_DIR"
 
 # Ensure we use local Python modules (not from other locations)
-export PYTHONPATH="$(pwd):$PYTHONPATH"
+export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 
 # Display startup message
 echo "========================================"
