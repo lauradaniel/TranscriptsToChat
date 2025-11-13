@@ -1053,7 +1053,7 @@ def prepare_chat_context(transcripts, intent, topic, category, agent_task):
     return "\n".join(context_parts), len(sample_transcripts)
 
 
-def create_transcript_csv(project_id, filters, transcript_refs):
+def create_transcript_csv(project_id, filters, transcript_refs, force_recreate=False):
     """
     Create a CSV file from JSON transcripts for efficient AI processing.
 
@@ -1072,10 +1072,15 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     - If <=200 transcripts: Process all
     - If >200 transcripts: Randomly sample 200 (no need to process thousands!)
 
+    CSV CACHING STRATEGY:
+    - force_recreate=True: Deletes old CSV and creates fresh one (used when opening chat)
+    - force_recreate=False: Reuses existing CSV if available (used for subsequent questions)
+
     Args:
         project_id: Project ID
         filters: Dict with intent, topic, category, agent_task
         transcript_refs: List of (interaction_id, file_path) tuples
+        force_recreate: If True, always create fresh CSV. If False, reuse existing CSV.
 
     Returns:
         dict: {
@@ -1100,8 +1105,14 @@ def create_transcript_csv(project_id, filters, transcript_refs):
     filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
     csv_path = data_folder / f"transcripts_{filter_hash}.csv"
 
+    # Handle force_recreate: delete existing CSV to create fresh one
+    if force_recreate and csv_path.exists():
+        print(f"\n🔄 Force recreate enabled - Deleting old CSV: {csv_path}")
+        csv_path.unlink()
+        print(f"  Creating fresh CSV with new random sample...")
+
     # Check if CSV already exists (for consistent counts across chat session)
-    if csv_path.exists():
+    if csv_path.exists() and not force_recreate:
         print(f"\n♻️  Reusing existing CSV: {csv_path}")
         # Load existing CSV to get accurate counts
         existing_df = pd.read_csv(csv_path)
@@ -1121,7 +1132,7 @@ def create_transcript_csv(project_id, filters, transcript_refs):
             'was_sampled': was_sampled
         }
 
-    # CSV doesn't exist, create it
+    # CSV doesn't exist or force_recreate is True - create it
     print(f"\n📝 Creating fresh CSV file (OPTIMIZED FORMAT): {csv_path}")
 
     # APPLY SMART SAMPLING BEFORE PROCESSING (performance optimization!)
@@ -1464,7 +1475,8 @@ def prepare_chat(project_id):
             }), 404
 
         # Create CSV file (this is the time-consuming part)
-        csv_result = create_transcript_csv(project_id, filters, transcript_refs)
+        # force_recreate=True ensures fresh CSV with new random sample each time chat is opened
+        csv_result = create_transcript_csv(project_id, filters, transcript_refs, force_recreate=True)
 
         if not csv_result or not os.path.exists(csv_result['csv_path']):
             return jsonify({
@@ -1734,7 +1746,8 @@ def chat_query(project_id):
             }), 404
 
         # Step 1: Create or load CSV file
-        csv_result = create_transcript_csv(project_id, filters, transcript_refs)
+        # force_recreate=False (default) reuses existing CSV for consistent counts during chat session
+        csv_result = create_transcript_csv(project_id, filters, transcript_refs, force_recreate=False)
 
         if not csv_result or not os.path.exists(csv_result['csv_path']):
             return jsonify({
