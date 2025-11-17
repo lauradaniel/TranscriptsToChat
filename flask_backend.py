@@ -34,6 +34,18 @@ os.makedirs('data', exist_ok=True)  # Ensure data directory exists for database
 db = TranscriptDatabase(DB_PATH)
 
 
+# Disable caching for development (ensures browser always loads latest files)
+@app.after_request
+def add_no_cache_headers(response):
+    """Add headers to disable caching for static files during development"""
+    # Only apply to static files (not API endpoints)
+    if not request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
+
 # Serve frontend files
 @app.route('/')
 def serve_index():
