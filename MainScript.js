@@ -1041,20 +1041,23 @@ async function loadProjectsToChatDropdown() {
     }
 }
 
+// Store the global click handler so we can remove it when needed
+let chatDropdownGlobalClickHandler = null;
+
 function setupChatDropdownEvents() {
     const input = document.getElementById('chatProjectSearch');
     const dropdownList = document.getElementById('chatProjectDropdown');
-    const arrow = document.getElementById('chatDropdownArrow'); 
+    const arrow = document.getElementById('chatDropdownArrow');
 
     const showDropdown = () => {
         dropdownList.classList.remove('hidden');
-        arrow.classList.add('open'); 
+        arrow.classList.add('open');
         input.setAttribute('aria-expanded', 'true');
     };
-    
+
     const hideDropdown = () => {
         dropdownList.classList.add('hidden');
-        arrow.classList.remove('open'); 
+        arrow.classList.remove('open');
         input.setAttribute('aria-expanded', 'false');
     };
 
@@ -1068,17 +1071,26 @@ function setupChatDropdownEvents() {
         }
     };
 
-    document.addEventListener('click', (e) => {
+    // Remove the old global click handler if it exists (prevents multiple listeners)
+    if (chatDropdownGlobalClickHandler) {
+        document.removeEventListener('click', chatDropdownGlobalClickHandler);
+    }
+
+    // Create new global click handler to close dropdown when clicking outside
+    chatDropdownGlobalClickHandler = (e) => {
         if (!input.contains(e.target) && !dropdownList.contains(e.target) && !arrow.contains(e.target)) {
-            hideDropdown(); 
+            hideDropdown();
         }
-    });
+    };
+
+    // Add the new handler
+    document.addEventListener('click', chatDropdownGlobalClickHandler);
 
     input.oninput = (e) => {
         const searchText = e.target.value.toLowerCase();
         const items = dropdownList.querySelectorAll('li:not(.no-results-message)');
         let visibleCount = 0;
-        
+
         items.forEach(li => {
             const projectName = li.textContent.toLowerCase();
             if (projectName.includes(searchText)) {
@@ -1088,7 +1100,7 @@ function setupChatDropdownEvents() {
                 li.style.display = 'none';
             }
         });
-        
+
         let noResultsLi = dropdownList.querySelector('.no-results-message');
         if (!noResultsLi) {
             noResultsLi = document.createElement('li');
@@ -1097,7 +1109,7 @@ function setupChatDropdownEvents() {
             dropdownList.appendChild(noResultsLi);
         }
         noResultsLi.style.display = (visibleCount === 0) ? 'block' : 'none';
-        
+
         showDropdown();
     };
 }
